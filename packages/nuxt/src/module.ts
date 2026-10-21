@@ -3,11 +3,20 @@ import { mkdir, readdir, readFile, rm } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import { basename, join, resolve } from 'node:path';
 
-import { addComponent, addTypeTemplate, createResolver, defineNuxtModule, extendPages, useLogger } from '@nuxt/kit';
+import {
+    addComponent,
+    addServerHandler,
+    addTypeTemplate,
+    createResolver,
+    defineNuxtModule,
+    extendPages,
+    useLogger
+} from '@nuxt/kit';
 
 import type { PlayCanvasProject } from './runtime/types.ts';
-import type { UnpackLimits } from './unpack.ts';
-import { UnpackError, defaultLimits, slugify, unpackExport, writeExport } from './unpack.ts';
+import type { UnpackLimits } from './runtime/server/unpack.ts';
+import { UnpackError, defaultLimits, slugify, unpackExport } from './runtime/server/unpack.ts';
+import { writeExport } from './write-export.ts';
 
 export type { PlayCanvasProject, PlayCanvasProjects, PlayCanvasProjectSlug } from './runtime/types.ts';
 
@@ -78,7 +87,7 @@ export default defineNuxtModule<ModuleOptions>({
             const slug = slugify(name);
             if (!slug) throw new UnpackError(name, 'the file name has no letters or digits to make a slug from');
 
-            const unpacked = unpackExport(new Uint8Array(await readFile(zipPath)), name, options.limits);
+            const unpacked = await unpackExport(new Uint8Array(await readFile(zipPath)), name, options.limits);
             const project = await writeExport(unpacked, slug, outDir, baseURL);
             projects.set(slug, project);
             checkEngineVersion(project, nuxt.options.rootDir);
@@ -107,12 +116,34 @@ export default defineNuxtModule<ModuleOptions>({
         }
         if (zips.length === 0) logger.info(`No PlayCanvas exports found in ${options.dir}/`);
 
-        // Serve project files. Versions are content hashes, so their files never change
+        // Serve projects from repo zips as static files. Versions are content hashes, so their files
+        // never change. Project files fall through to the CMS route when there's no static one
         nuxt.options.nitro.publicAssets ||= [];
         nuxt.options.nitro.publicAssets.push(
             { dir: join(outDir, 'assets'), baseURL: `${baseURL}/assets`, maxAge: 60 * 60 * 24 * 365 },
-            { dir: join(outDir, 'projects'), baseURL: `${baseURL}/projects`, maxAge: 0 }
+            { dir: join(outDir, 'projects'), baseURL: `${baseURL}/projects`, maxAge: 0, fallthrough: true }
         );
+
+        // CMS projects are kept in the `playcanvas` storage mount: a folder by default, or any
+        // unstorage driver (S3, R2, Vercel Blob, …) configured under `nitro.storage.playcanvas`
+        nuxt.options.nitro.storage ||= {};
+        nuxt.options.nitro.storage.playcanvas ??= { driver: 'fs', base: '.data/playcanvas' };
+        nuxt.options.nitro.devStorage ||= {};
+        nuxt.options.nitro.devStorage.playcanvas ??= {
+            driver: 'fs',
+            base: join(nuxt.options.rootDir, '.data', 'playcanvas')
+        };
+
+        addServerHandler({
+            route: `${baseURL}/projects/:slug`,
+            method: 'get',
+            handler: resolver.resolve('./runtime/server/routes/project.get')
+        });
+        addServerHandler({
+            route: `${baseURL}/files/**`,
+            method: 'get',
+            handler: resolver.resolve('./runtime/server/routes/files.get')
+        });
 
         // Project files say which version is live, so browsers must always check for a newer one
         nuxt.options.routeRules ||= {};

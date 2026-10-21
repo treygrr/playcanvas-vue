@@ -28,8 +28,10 @@ const props = withDefaults(
         scene?: string;
         /** Fill the window using the project's canvas settings, like the Editor launch page */
         useProjectCanvasSettings?: boolean;
+        /** A preview token, to show a version that isn't live */
+        preview?: string;
     }>(),
-    { scene: undefined, useProjectCanvasSettings: false }
+    { scene: undefined, useProjectCanvasSettings: false, preview: undefined }
 );
 
 const emit = defineEmits<{
@@ -52,8 +54,8 @@ const project = shallowRef<PlayCanvasProject | null>(null);
 const error = shallowRef<Error | null>(null);
 
 watch(
-    () => props.project,
-    async (slug, _prev, onCleanup) => {
+    () => [props.project, props.preview] as const,
+    async ([slug, preview], _prev, onCleanup) => {
         let cancelled = false;
         onCleanup(() => {
             cancelled = true;
@@ -63,7 +65,7 @@ watch(
         error.value = null;
 
         try {
-            const response = await fetch(projectUrl(baseURL, slug));
+            const response = await fetch(projectUrl(baseURL, slug, preview));
             if (response.status === 404) throw new Error(`There is no PlayCanvas project "${slug}"`);
             if (!response.ok) throw new Error(`Failed to load PlayCanvas project "${slug}": ${response.status}`);
             const data = (await response.json()) as PlayCanvasProject;

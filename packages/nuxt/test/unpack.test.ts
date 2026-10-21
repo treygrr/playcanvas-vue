@@ -6,7 +6,8 @@ import { strToU8, zipSync } from 'fflate';
 import type { Zippable } from 'fflate';
 import { afterEach, describe, it, expect } from 'vitest';
 
-import { UnpackError, slugify, unpackExport, writeExport } from '../src/unpack.ts';
+import { UnpackError, slugify, unpackExport } from '../src/runtime/server/unpack.ts';
+import { writeExport } from '../src/write-export.ts';
 
 const config = {
     application_properties: { scripts: [1], useKeyboard: true, enableWebGl2: true },
@@ -47,8 +48,8 @@ describe('slugify', () => {
 });
 
 describe('unpackExport', () => {
-    it('keeps the project files and drops the launch page', () => {
-        const unpacked = unpackExport(zip(exportFiles()), 'game.zip');
+    it('keeps the project files and drops the launch page', async () => {
+        const unpacked = await unpackExport(zip(exportFiles()), 'game.zip');
 
         expect([...unpacked.files.keys()].sort()).toEqual([
             '100.json',
@@ -61,19 +62,19 @@ describe('unpackExport', () => {
         expect(unpacked.version).toMatch(/^[0-9a-f]{12}$/);
     });
 
-    it('gives the same zip the same version', () => {
+    it('gives the same zip the same version', async () => {
         const data = zip(exportFiles());
-        expect(unpackExport(data, 'a.zip').version).toBe(unpackExport(data, 'b.zip').version);
+        expect((await unpackExport(data, 'a.zip')).version).toBe((await unpackExport(data, 'b.zip')).version);
     });
 
-    it('finds an export inside a folder', () => {
-        const unpacked = unpackExport(zip({ 'Ball Game': exportFiles() }), 'game.zip');
+    it('finds an export inside a folder', async () => {
+        const unpacked = await unpackExport(zip({ 'Ball Game': exportFiles() }), 'game.zip');
         expect(unpacked.files.has('config.json')).toBe(true);
         expect(unpacked.files.has('100.json')).toBe(true);
     });
 
-    it('ignores files added by archivers', () => {
-        const unpacked = unpackExport(
+    it('ignores files added by archivers', async () => {
+        const unpacked = await unpackExport(
             zip({ ...exportFiles(), __MACOSX: { '._config.json': strToU8('x') }, '.DS_Store': strToU8('x') }),
             'game.zip'
         );
@@ -88,31 +89,33 @@ describe('unpackExport', () => {
         ['an absolute path', '/etc/evil'],
         ['a Windows path', 'files\\evil.js'],
         ['a drive letter', 'C:/evil.js']
-    ])('rejects %s', (_label, name) => {
-        expect(() => unpackExport(zip({ ...exportFiles(), [name]: strToU8('x') }), 'evil.zip')).toThrow(
+    ])('rejects %s', async (_label, name) => {
+        await expect(unpackExport(zip({ ...exportFiles(), [name]: strToU8('x') }), 'evil.zip')).rejects.toThrow(
             /unsafe file path/
         );
     });
 
-    it('rejects zips that are too large or have too many files', () => {
+    it('rejects zips that are too large or have too many files', async () => {
         const data = zip({ ...exportFiles(), 'big.bin': new Uint8Array(2048) });
 
-        expect(() => unpackExport(data, 'big.zip', { maxSize: 1024, maxFiles: 100 })).toThrow(/more than 1024 bytes/);
-        expect(() => unpackExport(data, 'big.zip', { maxSize: 1e9, maxFiles: 3 })).toThrow(/more than 3 files/);
+        await expect(unpackExport(data, 'big.zip', { maxSize: 1024, maxFiles: 100 })).rejects.toThrow(
+            /more than 1024 bytes/
+        );
+        await expect(unpackExport(data, 'big.zip', { maxSize: 1e9, maxFiles: 3 })).rejects.toThrow(/more than 3 files/);
     });
 
-    it('rejects things that are not Editor exports', () => {
-        expect(() => unpackExport(strToU8('not a zip'), 'x.zip')).toThrow(/not a readable zip/);
-        expect(() => unpackExport(zip({ 'readme.txt': strToU8('hi') }), 'x.zip')).toThrow(/no config.json/);
-        expect(() => unpackExport(zip({ 'config.json': strToU8('{oops') }), 'x.zip')).toThrow(/not valid JSON/);
+    it('rejects things that are not Editor exports', async () => {
+        await expect(unpackExport(strToU8('not a zip'), 'x.zip')).rejects.toThrow(/not a readable zip/);
+        await expect(unpackExport(zip({ 'readme.txt': strToU8('hi') }), 'x.zip')).rejects.toThrow(/no config.json/);
+        await expect(unpackExport(zip({ 'config.json': strToU8('{oops') }), 'x.zip')).rejects.toThrow(/not valid JSON/);
 
         const { '100.json': _scene, ...withoutScene } = exportFiles() as Record<string, Uint8Array>;
-        expect(() => unpackExport(zip(withoutScene), 'x.zip')).toThrow(/scene file "100.json" is missing/);
+        await expect(unpackExport(zip(withoutScene), 'x.zip')).rejects.toThrow(/scene file "100.json" is missing/);
     });
 
-    it('throws UnpackErrors naming the zip', () => {
-        expect(() => unpackExport(strToU8('nope'), 'Broken.zip')).toThrow(UnpackError);
-        expect(() => unpackExport(strToU8('nope'), 'Broken.zip')).toThrow(/"Broken.zip"/);
+    it('throws UnpackErrors naming the zip', async () => {
+        await expect(unpackExport(strToU8('nope'), 'Broken.zip')).rejects.toThrow(UnpackError);
+        await expect(unpackExport(strToU8('nope'), 'Broken.zip')).rejects.toThrow(/"Broken.zip"/);
     });
 });
 
@@ -120,7 +123,7 @@ describe('writeExport', () => {
     it('writes the files to a versioned folder, and the project file', async () => {
         const outDir = await mkdtemp(join(tmpdir(), 'playcanvas-'));
         dirs.push(outDir);
-        const unpacked = unpackExport(zip(exportFiles()), 'game.zip');
+        const unpacked = await unpackExport(zip(exportFiles()), 'game.zip');
 
         const project = await writeExport(unpacked, 'ball-game', outDir, '/_playcanvas/');
 
@@ -136,8 +139,8 @@ describe('writeExport', () => {
     it('removes the previous version', async () => {
         const outDir = await mkdtemp(join(tmpdir(), 'playcanvas-'));
         dirs.push(outDir);
-        const first = unpackExport(zip(exportFiles()), 'game.zip');
-        const second = unpackExport(zip({ ...exportFiles(), 'extra.txt': strToU8('new') }), 'game.zip');
+        const first = await unpackExport(zip(exportFiles()), 'game.zip');
+        const second = await unpackExport(zip({ ...exportFiles(), 'extra.txt': strToU8('new') }), 'game.zip');
 
         await writeExport(first, 'ball-game', outDir, '/_playcanvas');
         await writeExport(second, 'ball-game', outDir, '/_playcanvas');

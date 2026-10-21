@@ -1,12 +1,5 @@
-import { createHash } from 'node:crypto';
-import { mkdir, rm, writeFile } from 'node:fs/promises';
-import { dirname, join, posix, relative, resolve, sep } from 'node:path';
-
 import type { EditorConfig } from '@treygrr/playcanvas-vue/editor/manifest';
-import { createEditorManifest } from '@treygrr/playcanvas-vue/editor/manifest';
 import { strFromU8, unzipSync } from 'fflate';
-
-import type { PlayCanvasProject } from './runtime/types.ts';
 
 export type UnpackLimits = {
     /** The most bytes a zip may unpack to */
@@ -55,6 +48,18 @@ const isSafeEntryName = (name: string) =>
     !/^[a-z]:/i.test(name) &&
     !name.split('/').some((segment) => segment === '..');
 
+/**
+ * A short hash of `data`, used as a version id. Uses Web Crypto, so it runs on any server runtime.
+ */
+export async function contentHash(data: Uint8Array): Promise<string> {
+    const digest = await globalThis.crypto.subtle.digest('SHA-256', data as BufferSource);
+    return [...new Uint8Array(digest).slice(0, 6)].map((byte) => byte.toString(16).padStart(2, '0')).join('');
+}
+
+// Path helpers for zip entry names, which always use forward slashes
+const dirname = (path: string) => (path.includes('/') ? path.slice(0, path.lastIndexOf('/')) : '.');
+const basename = (path: string) => path.slice(path.lastIndexOf('/') + 1);
+
 export type UnpackedExport = {
     version: string;
     title: string;
@@ -72,7 +77,11 @@ export type UnpackedExport = {
  * @param zipName The zip file name, for error messages.
  * @param limits Size limits for the unpacked contents.
  */
-export function unpackExport(zip: Uint8Array, zipName: string, limits: UnpackLimits = defaultLimits): UnpackedExport {
+export async function unpackExport(
+    zip: Uint8Array,
+    zipName: string,
+    limits: UnpackLimits = defaultLimits
+): Promise<UnpackedExport> {
     let fileCount = 0;
     let declaredSize = 0;
 
@@ -105,10 +114,10 @@ export function unpackExport(zip: Uint8Array, zipName: string, limits: UnpackLim
 
     // Exports are usually flat, but re-zipped ones can be inside a folder
     const configPath = Object.keys(entries)
-        .filter((name) => posix.basename(name) === 'config.json')
+        .filter((name) => basename(name) === 'config.json')
         .sort((a, b) => a.split('/').length - b.split('/').length)[0];
     if (!configPath) throw new UnpackError(zipName, 'no config.json found. Is this an Editor "Download" build?');
-    const root = posix.dirname(configPath) === '.' ? '' : `${posix.dirname(configPath)}/`;
+    const root = dirname(configPath) === '.' ? '' : `${dirname(configPath)}/`;
 
     let config: EditorConfig;
     try {
@@ -136,54 +145,11 @@ export function unpackExport(zip: Uint8Array, zipName: string, limits: UnpackLim
     const launchPage = launchPageData ? strFromU8(launchPageData) : '';
     const title = launchPage.match(/<title>([^<]*)<\/title>/i)?.[1]?.trim() || zipName.replace(/\.zip$/i, '');
 
-    const engineFile = Object.keys(entries).find((name) => /^playcanvas[\w.-]*\.js$/.test(posix.basename(name)));
+    const engineFile = Object.keys(entries).find((name) => /^playcanvas[\w.-]*\.js$/.test(basename(name)));
     const engineHeader = engineFile ? strFromU8(entries[engineFile]!.subarray(0, 512)) : '';
     const engineVersion = engineHeader.match(/PlayCanvas Engine v(\d+\.\d+\.\d+)/)?.[1] ?? null;
 
-    const version = createHash('sha256').update(zip).digest('hex').slice(0, 12);
+    const version = await contentHash(zip);
 
     return { version, title, engineVersion, config, files };
-}
-
-/**
- * Writes an unpacked export to `<outDir>/assets/<slug>/<version>/`, and its project file to
- * `<outDir>/projects/<slug>.json`. Older versions of the project are removed.
- *
- * @param unpacked The unpacked export.
- * @param slug The project slug.
- * @param outDir The folder to write to.
- * @param baseURL The URL `outDir` is served from.
- */
-export async function writeExport(
-    unpacked: UnpackedExport,
-    slug: string,
-    outDir: string,
-    baseURL: string
-): Promise<PlayCanvasProject> {
-    const projectDir = resolve(outDir, 'assets', slug);
-    const versionDir = resolve(projectDir, unpacked.version);
-
-    await rm(projectDir, { recursive: true, force: true });
-
-    for (const [path, data] of unpacked.files) {
-        const target = resolve(versionDir, ...path.split('/'));
-        // Defence in depth: the entry names were already checked
-        if (relative(versionDir, target).startsWith(`..${sep}`)) throw new Error(`Refusing to write ${target}`);
-        await mkdir(dirname(target), { recursive: true });
-        await writeFile(target, data);
-    }
-
-    const project: PlayCanvasProject = {
-        slug,
-        title: unpacked.title,
-        version: unpacked.version,
-        engineVersion: unpacked.engineVersion,
-        base: `${baseURL.replace(/\/$/, '')}/assets/${slug}/${unpacked.version}/`,
-        manifest: createEditorManifest(unpacked.config)
-    };
-
-    await mkdir(join(outDir, 'projects'), { recursive: true });
-    await writeFile(join(outDir, 'projects', `${slug}.json`), JSON.stringify(project, null, 2));
-
-    return project;
 }

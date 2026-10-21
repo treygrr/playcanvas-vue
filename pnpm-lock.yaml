@@ -265,6 +265,9 @@ importers:
       typescript:
         specifier: 6.0.3
         version: 6.0.3
+      unstorage:
+        specifier: 1.17.6
+        version: 1.17.6(db0@0.3.4)(ioredis@5.11.1(supports-color@7.2.0))
       vitest:
         specifier: 5.0.2
         version: 5.0.2(@types/node@24.13.6)(@vitest/coverage-v8@5.0.2)(jsdom@30.1.1)(vite@8.3.4(@types/node@24.13.6)(jiti@2.7.0))

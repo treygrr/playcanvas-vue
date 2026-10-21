@@ -38,7 +38,7 @@
         "dev:build": "nuxt build playground",
         "dev:prepare": "nuxt-module-build build --stub && nuxt-module-build prepare && nuxt prepare playground",
         "test": "nuxt-module-build prepare && vitest run",
-        "typecheck": "nuxt-module-build prepare && vue-tsc --noEmit"
+        "typecheck": "nuxt-module-build prepare && nuxt prepare playground && node typecheck/write-config.mjs && vue-tsc --noEmit -p .nuxt/tsconfig.typecheck.json && vue-tsc --noEmit -p src/runtime/server/tsconfig.json"
     },
     "dependencies": {
         "@nuxt/kit": "4.6.0",
@@ -52,6 +52,7 @@
         "nuxt": "4.6.0",
         "playcanvas": "2.23.3",
         "typescript": "6.0.3",
+        "unstorage": "1.17.6",
         "vitest": "5.0.2",
         "vue": "3.5.44",
         "vue-tsc": "3.3.13"

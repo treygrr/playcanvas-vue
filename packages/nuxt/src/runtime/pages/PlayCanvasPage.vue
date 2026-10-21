@@ -11,10 +11,13 @@ import type { PlayCanvasProject } from '../types';
 
 const route = useRoute();
 const slug = computed(() => String(route.params.slug));
+const preview = computed(() => (typeof route.query.preview === 'string' ? route.query.preview : undefined));
 const { baseURL } = useRuntimeConfig().public.playcanvas as { baseURL: string };
 
 // Fetched on the server too, for a real 404 status and the page title
-const { data: project, error } = await useFetch<PlayCanvasProject>(() => projectUrl(baseURL, slug.value));
+const { data: project, error } = await useFetch<PlayCanvasProject>(() =>
+    projectUrl(baseURL, slug.value, preview.value)
+);
 
 if (error.value || !project.value) {
     throw createError({
@@ -29,7 +32,7 @@ useHead({ title: () => project.value?.title ?? slug.value });
 
 <template>
     <div class="playcanvas-page">
-        <PlayCanvasScene :project="slug" use-project-canvas-settings tabindex="0">
+        <PlayCanvasScene :project="slug" :preview="preview" use-project-canvas-settings tabindex="0">
             <template #loading>
                 <p class="playcanvas-page__status">Loading {{ project?.title }}…</p>
             </template>
