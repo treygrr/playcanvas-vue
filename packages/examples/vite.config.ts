@@ -10,8 +10,8 @@ export default defineConfig({
     resolve: {
         // Use the library source, so changes show up without rebuilding it
         alias: [
-            { find: /^@playcanvas\/vue$/, replacement: `${lib}/index.ts` },
-            { find: /^@playcanvas\/vue\/(.*)$/, replacement: `${lib}/$1/index.ts` }
+            { find: /^@treygrr\/playcanvas-vue$/, replacement: `${lib}/index.ts` },
+            { find: /^@treygrr\/playcanvas-vue\/(.*)$/, replacement: `${lib}/$1/index.ts` }
         ]
     }
 });

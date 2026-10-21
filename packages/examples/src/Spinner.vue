@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { Entity } from '@playcanvas/vue';
-import type { SyntheticMouseEvent } from '@playcanvas/vue';
-import { Render } from '@playcanvas/vue/components';
-import { useAppEvent, useMaterial } from '@playcanvas/vue/composables';
+import { Entity } from '@treygrr/playcanvas-vue';
+import type { SyntheticMouseEvent } from '@treygrr/playcanvas-vue';
+import { Render } from '@treygrr/playcanvas-vue/components';
+import { useAppEvent, useMaterial } from '@treygrr/playcanvas-vue/composables';
 import { ref } from 'vue';
 
 const props = defineProps<{ x: number; speed: number }>();

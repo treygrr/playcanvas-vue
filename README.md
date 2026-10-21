@@ -1,8 +1,8 @@
-# @playcanvas/vue
+# @treygrr/playcanvas-vue
 
 _⚡ A full-featured library for interactive 3D in Vue._
 
-`@playcanvas/vue` is a thin wrapper around [PlayCanvas](https://github.com/playcanvas/engine) — a battle-tested, real-time 3D engine. It is the Vue counterpart of [`@playcanvas/react`](https://github.com/playcanvas/react), with the same components and features, expressed with Vue idioms: slots, template refs, `@events`, and composables.
+`@treygrr/playcanvas-vue` is a thin wrapper around [PlayCanvas](https://github.com/playcanvas/engine) — a battle-tested, real-time 3D engine. It is the Vue counterpart of [`@playcanvas/react`](https://github.com/playcanvas/react), with the same components and features, expressed with Vue idioms: slots, template refs, `@events`, and composables.
 
 ### Features
 
@@ -16,7 +16,7 @@ _⚡ A full-featured library for interactive 3D in Vue._
 ## Getting Started
 
 ```bash
-npm install @playcanvas/vue playcanvas
+npm install @treygrr/playcanvas-vue playcanvas
 ```
 
 ### Show me the code
@@ -25,8 +25,8 @@ Here's how you render a sphere.
 
 ```vue
 <script setup lang="ts">
-import { Application, Entity } from '@playcanvas/vue';
-import { Camera, Light, Render, Script } from '@playcanvas/vue/components';
+import { Application, Entity } from '@treygrr/playcanvas-vue';
+import { Camera, Light, Render, Script } from '@treygrr/playcanvas-vue/components';
 import { CameraControls } from 'playcanvas/scripts/esm/camera-controls.mjs';
 </script>
 
@@ -50,9 +50,9 @@ Et voilà! ✨
 
 ```vue
 <script setup lang="ts">
-import { Entity } from '@playcanvas/vue';
-import { Render } from '@playcanvas/vue/components';
-import { useAppEvent, useMaterial } from '@playcanvas/vue/composables';
+import { Entity } from '@treygrr/playcanvas-vue';
+import { Render } from '@treygrr/playcanvas-vue/components';
+import { useAppEvent, useMaterial } from '@treygrr/playcanvas-vue/composables';
 import { ref } from 'vue';
 
 const hovered = ref(false);
@@ -79,7 +79,7 @@ Asset composables return refs, so they can be destructured and used directly in 
 
 ```vue
 <script setup lang="ts">
-import { useModel } from '@playcanvas/vue/composables';
+import { useModel } from '@treygrr/playcanvas-vue/composables';
 
 const { asset, loading, error } = useModel('/statue.glb');
 </script>
@@ -125,7 +125,7 @@ const { asset, loading, error } = useModel('/statue.glb');
 | `<ApplicationWithoutCanvas canvasRef={ref}>` | `<ApplicationWithoutCanvas :canvas="canvasEl">`                 |
 | `ref` on `<Entity>` → `PcEntity`             | template ref → `entityRef.value.entity`                         |
 | `ref` on `<Script>` → script instance        | template ref → `scriptRef.value.script`                         |
-| `@playcanvas/react/hooks`                    | `@playcanvas/vue/composables`                                   |
+| `@playcanvas/react/hooks`                    | `@treygrr/playcanvas-vue/composables`                           |
 | `const { asset } = useModel(src)` (values)   | `const { asset } = useModel(src)` (refs, `src` can be reactive) |
 | `useMaterial({ diffuse })`                   | `useMaterial(() => ({ diffuse: color.value }))`                 |
 | `useEntity(path)` → value                    | `useEntity(path)` → computed ref                                |
@@ -138,7 +138,7 @@ Deprecated APIs from the React package (`useFrame`, `<OrbitControls>`, `AutoRota
 
 This is a pnpm workspace:
 
-- `packages/lib` — the `@playcanvas/vue` library
+- `packages/lib` — the `@treygrr/playcanvas-vue` library
 - `packages/examples` — a Vite app using the library from `.vue` files
 
 ```bash

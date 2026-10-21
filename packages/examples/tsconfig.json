@@ -7,8 +7,8 @@
         "rewriteRelativeImportExtensions": false,
         "allowImportingTsExtensions": true,
         "paths": {
-            "@playcanvas/vue": ["../lib/src/index.ts"],
-            "@playcanvas/vue/*": ["../lib/src/*/index.ts"]
+            "@treygrr/playcanvas-vue": ["../lib/src/index.ts"],
+            "@treygrr/playcanvas-vue/*": ["../lib/src/*/index.ts"]
         }
     },
     "include": ["src/**/*.ts", "src/**/*.vue", "vite.config.ts"]

@@ -40,7 +40,7 @@ let physicsInstanceCount = 0;
  * @example
  * ```vue
  * <script setup>
- * import { usePhysics } from '@playcanvas/vue/composables';
+ * import { usePhysics } from '@treygrr/playcanvas-vue/composables';
  * const physics = usePhysics();
  * </script>
  *

@@ -178,7 +178,7 @@ importers:
 
   packages/examples:
     dependencies:
-      '@playcanvas/vue':
+      '@treygrr/playcanvas-vue':
         specifier: workspace:*
         version: link:../lib
       playcanvas:

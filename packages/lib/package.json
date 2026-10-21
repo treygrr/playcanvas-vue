@@ -1,7 +1,7 @@
 {
-    "name": "@playcanvas/vue",
+    "name": "@treygrr/playcanvas-vue",
     "version": "0.1.0",
-    "description": "A Vue renderer for PlayCanvas – build interactive 3D applications using Vue's declarative paradigm.",
+    "description": "A Vue renderer for PlayCanvas \u2013 build interactive 3D applications using Vue's declarative paradigm.",
     "keywords": [
         "2d",
         "3d",
@@ -15,6 +15,15 @@
         "webgpu",
         "webxr"
     ],
+    "homepage": "https://github.com/treygrr/playcanvas-vue#readme",
+    "bugs": {
+        "url": "https://github.com/treygrr/playcanvas-vue/issues"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/treygrr/playcanvas-vue",
+        "directory": "packages/lib"
+    },
     "license": "MIT",
     "sideEffects": false,
     "type": "module",

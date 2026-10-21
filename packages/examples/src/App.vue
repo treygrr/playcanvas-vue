@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { Application, Entity } from '@playcanvas/vue';
-import { Camera, Light, Render, Script } from '@playcanvas/vue/components';
+import { Application, Entity } from '@treygrr/playcanvas-vue';
+import { Camera, Light, Render, Script } from '@treygrr/playcanvas-vue/components';
 import { FILLMODE_FILL_WINDOW, RESOLUTION_AUTO } from 'playcanvas';
 import { CameraControls } from 'playcanvas/scripts/esm/camera-controls.mjs';
 

@@ -1,5 +1,5 @@
 {
-    "name": "@playcanvas/vue-examples",
+    "name": "@treygrr/playcanvas-vue-examples",
     "private": true,
     "type": "module",
     "scripts": {
@@ -8,7 +8,7 @@
         "typecheck": "vue-tsc --noEmit"
     },
     "dependencies": {
-        "@playcanvas/vue": "workspace:*",
+        "@treygrr/playcanvas-vue": "workspace:*",
         "playcanvas": "2.23.3",
         "vue": "3.5.44"
     },
