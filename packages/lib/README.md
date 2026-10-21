@@ -1,8 +1,10 @@
 # @treygrr/playcanvas-vue
 
-_⚡ A full-featured library for interactive 3D in Vue._
+_⚡ A full-featured library for interactive 3D in Vue — because your 3D scene deserves a framework that doesn't re-render it into the ground._
 
-`@treygrr/playcanvas-vue` is a thin wrapper around [PlayCanvas](https://github.com/playcanvas/engine) — a battle-tested, real-time 3D engine. It is the Vue counterpart of [`@playcanvas/react`](https://github.com/playcanvas/react), with the same components and features, expressed with Vue idioms: slots, template refs, `@events`, and composables.
+PlayCanvas already has a lovely [React renderer](https://github.com/playcanvas/react). Which is great, if you enjoy dependency arrays, `useCallback` around everything, and wondering why your effect ran twice. For the rest of us, there's Vue. Real reactivity, templates that read like templates, and no need to memoize your feelings.
+
+So here it is: `@treygrr/playcanvas-vue`, a thin wrapper around [PlayCanvas](https://github.com/playcanvas/engine), a battle-tested real-time 3D engine. It has the same components and features as [`@playcanvas/react`](https://github.com/playcanvas/react), expressed the way nature intended: slots, template refs, `@events`, and composables.
 
 ### Features
 
