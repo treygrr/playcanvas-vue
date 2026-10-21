@@ -10,9 +10,13 @@ export {
     defineEventHandler,
     getHeader,
     getQuery,
+    getRequestIP,
+    getRequestProtocol,
     readBody,
     getRouterParam,
     setHeader,
     setHeaders,
+    useNitroApp,
+    useSession,
     useStorage
 } from '../playground/.nuxt/types/nitro-imports';

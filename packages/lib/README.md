@@ -145,7 +145,7 @@ import { Render } from '@treygrr/playcanvas-vue/components';
 </template>
 ```
 
-Using Nuxt? [`@treygrr/playcanvas-nuxt`](packages/nuxt) unpacks the zips for you: drop them in `playcanvas/` and use `<PlayCanvasScene project="my-game" />` anywhere.
+Using Nuxt? [`@treygrr/playcanvas-nuxt`](packages/nuxt) adds a CMS: track your PlayCanvas projects in an admin, and their published builds are imported onto your server, ready to release. Then use `<PlayCanvasScene project="my-game" />` anywhere.
 
 ## Coming from `@playcanvas/react`
 

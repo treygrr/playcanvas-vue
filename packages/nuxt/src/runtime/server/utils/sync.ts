@@ -52,7 +52,7 @@ function availableVersion(app: PlayCanvasApp): VersionRecord {
 }
 
 /** Replaces a version in a project, keeping its preview token so preview links keep working */
-function putVersion(project: ProjectRecord, version: VersionRecord): void {
+export function putVersion(project: ProjectRecord, version: VersionRecord): void {
     const existing = project.versions.find((v) => v.id === version.id);
     const merged = existing ? { ...version, previewToken: existing.previewToken } : version;
     project.versions = [...project.versions.filter((v) => v.id !== version.id), merged];

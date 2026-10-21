@@ -42,6 +42,12 @@ export type ModuleOptions = {
      */
     limits: UnpackLimits;
     /**
+     * The route of the admin, where PlayCanvas projects are added and released. `false` disables it.
+     * Log in with NUXT_PLAYCANVAS_ADMIN_PASSWORD, or decide access with a `playcanvas:authorize` hook.
+     * @default '/_playcanvas'
+     */
+    admin: string | false;
+    /**
      * Syncing tracked PlayCanvas projects with their published apps.
      */
     sync: {
@@ -88,6 +94,7 @@ export default defineNuxtModule<ModuleOptions>({
         route: '/play',
         baseURL: '/_playcanvas',
         limits: defaultLimits,
+        admin: '/_playcanvas',
         sync: { onRequest: true, interval: 300 }
     },
     async setup(options, nuxt) {
@@ -156,6 +163,10 @@ export default defineNuxtModule<ModuleOptions>({
             handler: resolver.resolve('./runtime/server/routes/project.get')
         });
         addServerHandler({
+            route: `${baseURL}/api/admin/**`,
+            handler: resolver.resolve('./runtime/server/routes/admin')
+        });
+        addServerHandler({
             route: `${baseURL}/api/sync`,
             method: 'post',
             handler: resolver.resolve('./runtime/server/routes/sync.post')
@@ -173,13 +184,24 @@ export default defineNuxtModule<ModuleOptions>({
             headers: { 'cache-control': 'no-cache' }
         };
 
-        nuxt.options.runtimeConfig.public.playcanvas = { baseURL };
+        const normalizeRoute = (route: string) => `/${route.replace(/^\/|\/$/g, '')}`;
+        // Empty when disabled: runtime config values can't be null
+        const playRoute = options.route === false ? '' : normalizeRoute(options.route);
+        const adminRoute = options.admin === false ? '' : normalizeRoute(options.admin);
+
+        nuxt.options.runtimeConfig.public.playcanvas = { baseURL, playRoute, adminRoute };
 
         // Server only. The PlayCanvas API token and sync secret are set at runtime with
         // NUXT_PLAYCANVAS_TOKEN and NUXT_PLAYCANVAS_SYNC_SECRET
         nuxt.options.runtimeConfig.playcanvas = {
             token: '',
             syncSecret: '',
+            // The admin password and an optional session secret, set at runtime with
+            // NUXT_PLAYCANVAS_ADMIN_PASSWORD and NUXT_PLAYCANVAS_SESSION_SECRET
+            adminPassword: '',
+            sessionSecret: '',
+            // Projects from repo zips, so the admin can show them and keep their slugs reserved
+            repoProjects: [...projects.values()].map(({ slug, title, version }) => ({ slug, title, version })),
             syncOnRequest: options.sync.onRequest,
             syncInterval: options.sync.interval,
             ...(nuxt.options.runtimeConfig.playcanvas as Record<string, unknown> | undefined)
@@ -234,16 +256,52 @@ export default defineNuxtModule<ModuleOptions>({
             mode: 'client'
         });
 
-        if (options.route !== false) {
-            const route = `/${options.route.replace(/^\/|\/$/g, '')}`;
-            extendPages((pages) => {
+        extendPages((pages) => {
+            if (playRoute) {
                 pages.push({
                     name: 'playcanvas-project',
-                    path: `${route}/:slug`,
+                    path: `${playRoute}/:slug`,
                     file: resolver.resolve('./runtime/pages/PlayCanvasPage.vue')
                 });
-            });
-        }
+            }
+            if (adminRoute) {
+                pages.push(
+                    {
+                        name: 'playcanvas-admin',
+                        path: adminRoute,
+                        file: resolver.resolve('./runtime/admin/AdminProjects.vue')
+                    },
+                    {
+                        // Not `projects/`, which is where project files are served
+                        name: 'playcanvas-admin-project',
+                        path: `${adminRoute}/manage/:slug`,
+                        file: resolver.resolve('./runtime/admin/AdminProject.vue')
+                    }
+                );
+            }
+        });
+
+        // Type `playcanvas:authorize` hooks in the app's Nitro plugins
+        addTypeTemplate(
+            {
+                filename: 'types/playcanvas-nitro.d.ts',
+                getContents: () =>
+                    [
+                        "import type { H3Event } from 'h3';",
+                        '',
+                        "declare module 'nitropack' {",
+                        '    interface NitroRuntimeHooks {',
+                        '        /** Decide whether a request may use the PlayCanvas admin, by setting `auth.allowed` */',
+                        "        'playcanvas:authorize': (event: H3Event, auth: { allowed?: boolean }) => void | Promise<void>;",
+                        '    }',
+                        '}',
+                        '',
+                        'export {};',
+                        ''
+                    ].join('\n')
+            },
+            { nitro: true, nuxt: true }
+        );
 
         // Autocomplete for the projects found at build time
         addTypeTemplate({

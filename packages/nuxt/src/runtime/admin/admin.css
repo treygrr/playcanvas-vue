@@ -1,0 +1,228 @@
+.pc-admin {
+    --pc-bg: #f6f7f9;
+    --pc-surface: #ffffff;
+    --pc-border: #e3e6eb;
+    --pc-text: #1b1f24;
+    --pc-muted: #626b77;
+    --pc-accent: #e7590d;
+    --pc-accent-text: #ffffff;
+    --pc-good: #1a7f37;
+    --pc-good-bg: #dcfce7;
+    --pc-warn: #9a6700;
+    --pc-warn-bg: #fff4d6;
+    --pc-bad: #c21f1f;
+    --pc-bad-bg: #fde4e4;
+    --pc-neutral-bg: #eef0f3;
+
+    /* Its own scrolling layer, so the host app's body styles don't show around it */
+    position: fixed;
+    inset: 0;
+    overflow: auto;
+    background: var(--pc-bg);
+    color: var(--pc-text);
+    font:
+        14px/1.5 system-ui,
+        -apple-system,
+        'Segoe UI',
+        sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+    .pc-admin {
+        --pc-bg: #111317;
+        --pc-surface: #1a1d23;
+        --pc-border: #2c313a;
+        --pc-text: #e8eaee;
+        --pc-muted: #9aa3ae;
+        --pc-good: #4ade80;
+        --pc-good-bg: #12351f;
+        --pc-warn: #f5c451;
+        --pc-warn-bg: #3a2f10;
+        --pc-bad: #ff8080;
+        --pc-bad-bg: #3d1717;
+        --pc-neutral-bg: #262a31;
+    }
+}
+
+.pc-admin *,
+.pc-admin *::before,
+.pc-admin *::after {
+    box-sizing: border-box;
+}
+
+.pc-admin a {
+    color: inherit;
+}
+
+.pc-admin-main {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 24px 16px 64px;
+}
+
+.pc-card {
+    background: var(--pc-surface);
+    border: 1px solid var(--pc-border);
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.pc-card h2 {
+    margin: 0 0 12px;
+    font-size: 15px;
+}
+
+.pc-muted {
+    color: var(--pc-muted);
+}
+
+.pc-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 12px;
+}
+
+.pc-spacer {
+    flex: 1;
+}
+
+.pc-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border: 1px solid var(--pc-border);
+    border-radius: 7px;
+    background: var(--pc-surface);
+    color: var(--pc-text);
+    font: inherit;
+    text-decoration: none;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.pc-button:hover:not(:disabled) {
+    border-color: var(--pc-muted);
+}
+
+.pc-button:disabled {
+    opacity: 0.55;
+    cursor: default;
+}
+
+.pc-button--primary {
+    background: var(--pc-accent);
+    border-color: var(--pc-accent);
+    color: var(--pc-accent-text);
+}
+
+.pc-button--danger {
+    color: var(--pc-bad);
+}
+
+.pc-input {
+    padding: 6px 10px;
+    border: 1px solid var(--pc-border);
+    border-radius: 7px;
+    background: var(--pc-surface);
+    color: var(--pc-text);
+    font: inherit;
+}
+
+.pc-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 13px;
+}
+
+.pc-table-wrap {
+    overflow-x: auto;
+}
+
+.pc-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.pc-table th,
+.pc-table td {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--pc-border);
+    text-align: left;
+    vertical-align: top;
+}
+
+.pc-table th {
+    color: var(--pc-muted);
+    font-weight: 500;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.pc-table tr:last-child td {
+    border-bottom: none;
+}
+
+.pc-chip {
+    display: inline-block;
+    padding: 1px 8px;
+    border-radius: 999px;
+    background: var(--pc-neutral-bg);
+    color: var(--pc-muted);
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+.pc-chip--good {
+    background: var(--pc-good-bg);
+    color: var(--pc-good);
+}
+
+.pc-chip--warn {
+    background: var(--pc-warn-bg);
+    color: var(--pc-warn);
+}
+
+.pc-chip--bad {
+    background: var(--pc-bad-bg);
+    color: var(--pc-bad);
+}
+
+.pc-alert {
+    padding: 10px 14px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    background: var(--pc-bad-bg);
+    color: var(--pc-bad);
+}
+
+.pc-alert--info {
+    background: var(--pc-neutral-bg);
+    color: var(--pc-text);
+}
+
+.pc-switch {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 8px 0;
+    cursor: pointer;
+}
+
+.pc-switch input {
+    margin-top: 3px;
+}
+
+.pc-switch small {
+    display: block;
+    color: var(--pc-muted);
+}
+
+.pc-code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 12px;
+}
