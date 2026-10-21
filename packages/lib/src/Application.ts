@@ -4,6 +4,9 @@ import {
     FILLMODE_KEEP_ASPECT,
     RESOLUTION_AUTO,
     Application as PlayCanvasApplication,
+    ElementInput,
+    GamePads,
+    Keyboard,
     Mouse,
     TouchDevice,
     RESOLUTION_FIXED,
@@ -46,7 +49,8 @@ import {
 } from './utils/validation.ts';
 
 // These props are excluded from the <Application/> component props.
-type ExcludedApplicationProps = 'mouse' | 'touch' | 'keyboard' | 'gamepads' | 'scene' | 'scripts' | 'assets';
+type ExcludedApplicationProps =
+    'mouse' | 'touch' | 'keyboard' | 'gamepads' | 'elementInput' | 'scene' | 'scripts' | 'scriptsOrder' | 'assets';
 
 // eslint-disable-next-line @typescript-eslint/consistent-type-definitions -- interfaces preserve inherited prop overrides
 export interface ApplicationProps extends Omit<Partial<PublicProps<PlayCanvasApplication>>, ExcludedApplicationProps> {
@@ -83,6 +87,61 @@ export interface ApplicationProps extends Omit<Partial<PublicProps<PlayCanvasApp
 
     /** Graphics Settings */
     graphicsDeviceOptions?: GraphicsDeviceOptions;
+
+    /**
+     * Enables mouse input, available as `app.mouse`.
+     * @default true
+     */
+    useMouse?: boolean;
+
+    /**
+     * Enables touch input, available as `app.touch`.
+     * @default true
+     */
+    useTouch?: boolean;
+
+    /**
+     * Enables keyboard input, available as `app.keyboard`.
+     * @default false
+     */
+    useKeyboard?: boolean;
+
+    /**
+     * Where keyboard input is listened for. With `'canvas'`, keys only register while the canvas
+     * has focus, so several applications on a page don't all react. The canvas needs a `tabindex`.
+     * @default 'window'
+     */
+    keyboardTarget?: 'window' | 'canvas';
+
+    /**
+     * Enables gamepad input, available as `app.gamepads`.
+     * @default false
+     */
+    useGamepads?: boolean;
+
+    /**
+     * Enables input for UI elements, such as buttons on a `<Screen>`.
+     * @default false
+     */
+    useElementInput?: boolean;
+
+    /**
+     * A prefix for the URLs of assets loaded by the application, eg from an Editor project config.
+     * @default ''
+     */
+    assetPrefix?: string;
+
+    /**
+     * A prefix for the URLs of script assets.
+     * @default ''
+     */
+    scriptPrefix?: string;
+
+    /**
+     * The asset ids of scripts, in the order they are loaded. Editor projects list this in their config.
+     * @default []
+     */
+    scriptsOrder?: (number | string)[];
 }
 
 // eslint-disable-next-line @typescript-eslint/consistent-type-definitions -- interfaces preserve inherited prop overrides
@@ -91,7 +150,29 @@ export interface ApplicationWithoutCanvasProps extends ApplicationProps {
     canvas: MaybeRef<HTMLCanvasElement | null | undefined>;
 }
 
-const exclude: ExcludedApplicationProps[] = ['mouse', 'touch', 'keyboard', 'gamepads', 'scene', 'scripts', 'assets'];
+const exclude: ExcludedApplicationProps[] = [
+    'mouse',
+    'touch',
+    'keyboard',
+    'gamepads',
+    'elementInput',
+    'scene',
+    'scripts',
+    'scriptsOrder',
+    'assets'
+];
+
+const booleanProp = (name: string, defaultValue: boolean) => ({
+    validate: (value: unknown) => typeof value === 'boolean',
+    errorMsg: (value: unknown) => `${name} must be a boolean. Received: ${value}`,
+    default: defaultValue
+});
+
+const stringProp = (name: string) => ({
+    validate: (value: unknown) => typeof value === 'string',
+    errorMsg: (value: unknown) => `${name} must be a string. Received: ${value}`,
+    default: ''
+});
 
 const componentDefinition = createComponentDefinition<ApplicationWithoutCanvasProps, PlayCanvasApplication>(
     'Application',
@@ -146,10 +227,41 @@ const configSchema = {
         validate: (value: unknown) => value === undefined || (typeof value === 'object' && value !== null),
         errorMsg: (value: unknown) => `graphicsDeviceOptions must be an object. Received: ${value}`,
         default: undefined
+    },
+    useMouse: booleanProp('useMouse', true),
+    useTouch: booleanProp('useTouch', true),
+    useKeyboard: booleanProp('useKeyboard', false),
+    keyboardTarget: {
+        validate: (value: unknown) => value === 'window' || value === 'canvas',
+        errorMsg: (value: unknown) => `keyboardTarget must be 'window' or 'canvas'. Received: ${value}`,
+        default: 'window'
+    },
+    useGamepads: booleanProp('useGamepads', false),
+    useElementInput: booleanProp('useElementInput', false),
+    assetPrefix: stringProp('assetPrefix'),
+    scriptPrefix: stringProp('scriptPrefix'),
+    scriptsOrder: {
+        validate: (value: unknown) =>
+            Array.isArray(value) && value.every((v) => typeof v === 'number' || typeof v === 'string'),
+        errorMsg: (value: unknown) => `scriptsOrder must be an array of asset ids. Received: ${value}`,
+        default: []
     }
 } as Schema<ApplicationWithoutCanvasProps, PlayCanvasApplication>;
 
 const configKeys = Object.keys(configSchema);
+
+// Config props that the application is constructed with, so changing them recreates it
+const creationKeys = [
+    'useMouse',
+    'useTouch',
+    'useKeyboard',
+    'keyboardTarget',
+    'useGamepads',
+    'useElementInput',
+    'assetPrefix',
+    'scriptPrefix',
+    'scriptsOrder'
+];
 const appKeys = Object.keys(componentDefinition.schema).filter((key) => !configKeys.includes(key));
 
 const configDefinition = { name: 'Application', schema: configSchema };
@@ -200,23 +312,26 @@ export const ApplicationWithoutCanvas = defineComponent(
             )
         );
 
-        // Recreate the application only when the *values* of the device settings change
-        const deviceKey = computed(() => {
-            const { deviceTypes = [], graphicsDeviceOptions } = config.value;
+        // Recreate the application only when the *values* of the settings it is created with change
+        const creationKey = computed(() => {
+            const { deviceTypes = [], graphicsDeviceOptions, ...creationOptions } = config.value;
             const graphicsOptsKey = graphicsDeviceOptions
                 ? Object.entries(graphicsDeviceOptions)
                       .sort(([a], [b]) => a.localeCompare(b)) // order-insensitive
                       .map(([k, v]) => `${k}:${String(v)}`)
                       .join('|')
                 : 'none';
-            return `${deviceTypes.join('-')}/${graphicsOptsKey}`;
+            const creationOptionsKey = creationKeys
+                .map((key) => `${key}:${String(creationOptions[key as keyof typeof creationOptions])}`)
+                .join('|');
+            return `${deviceTypes.join('-')}/${graphicsOptsKey}/${creationOptionsKey}`;
         });
 
         const app = shallowRef<PlayCanvasApplication | null>(null);
         const pointerEvents = new Set<string>();
 
         watch(
-            [() => toValue(props.canvas), deviceKey],
+            [() => toValue(props.canvas), creationKey],
             ([canvas], _prev, onCleanup) => {
                 // Tracks if the application is torn down while awaiting the graphics device
                 let cancelled = false;
@@ -234,7 +349,7 @@ export const ApplicationWithoutCanvas = defineComponent(
 
                 if (!canvas) return;
 
-                const { deviceTypes, graphicsDeviceOptions } = config.value;
+                const { deviceTypes, graphicsDeviceOptions, ...options } = config.value;
 
                 (async () => {
                     // Create the graphics device
@@ -253,9 +368,18 @@ export const ApplicationWithoutCanvas = defineComponent(
                     // Proceed with normal PlayCanvas init
                     pcApp = markRaw(
                         new PlayCanvasApplication(canvas, {
-                            mouse: new Mouse(canvas),
-                            touch: new TouchDevice(canvas),
-                            graphicsDevice: dev
+                            graphicsDevice: dev,
+                            mouse: options.useMouse ? new Mouse(canvas) : undefined,
+                            touch: options.useTouch ? new TouchDevice(canvas) : undefined,
+                            keyboard: options.useKeyboard
+                                ? new Keyboard(options.keyboardTarget === 'canvas' ? canvas : window)
+                                : undefined,
+                            gamepads: options.useGamepads ? new GamePads() : undefined,
+                            elementInput: options.useElementInput ? new ElementInput(canvas) : undefined,
+                            assetPrefix: options.assetPrefix,
+                            scriptPrefix: options.scriptPrefix,
+                            // The engine types these as strings, but Editor configs list numeric ids, and it accepts both
+                            scriptsOrder: options.scriptsOrder as unknown as string[]
                         })
                     );
                     pcApp.start();

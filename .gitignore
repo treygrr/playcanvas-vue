@@ -6,3 +6,6 @@ coverage
 .vite
 *.local
 *.ply
+
+# Local PlayCanvas Editor exports for the editor demo
+packages/examples/public/exports/

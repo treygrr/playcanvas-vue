@@ -22,3 +22,20 @@ export type {
 } from './gltf/index.ts';
 
 export type { SyntheticMouseEvent, SyntheticPointerEvent } from './utils/synthetic-event.ts';
+
+// PlayCanvas Editor exports
+export {
+    EditorProject,
+    EditorScene,
+    editorApplicationProps,
+    loadEditorProject,
+    createEditorManifest
+} from './editor/index.ts';
+export type {
+    EditorProjectProps,
+    EditorSceneProps,
+    LoadEditorProjectOptions,
+    EditorConfig,
+    EditorManifest,
+    EditorModule
+} from './editor/index.ts';
