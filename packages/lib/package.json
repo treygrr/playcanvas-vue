@@ -1,0 +1,84 @@
+{
+    "name": "@playcanvas/vue",
+    "version": "0.1.0",
+    "description": "A Vue renderer for PlayCanvas – build interactive 3D applications using Vue's declarative paradigm.",
+    "keywords": [
+        "2d",
+        "3d",
+        "vue",
+        "gaussian",
+        "game",
+        "gltf",
+        "splatting",
+        "webgl",
+        "webgl2",
+        "webgpu",
+        "webxr"
+    ],
+    "license": "MIT",
+    "sideEffects": false,
+    "type": "module",
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "import": "./dist/index.js"
+        },
+        "./components": {
+            "types": "./dist/components/index.d.ts",
+            "import": "./dist/components/index.js"
+        },
+        "./composables": {
+            "types": "./dist/composables/index.d.ts",
+            "import": "./dist/composables/index.js"
+        },
+        "./scripts": {
+            "types": "./dist/scripts/index.d.ts",
+            "import": "./dist/scripts/index.js"
+        },
+        "./utils": {
+            "types": "./dist/utils/index.d.ts",
+            "import": "./dist/utils/index.js"
+        }
+    },
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "files": [
+        "dist"
+    ],
+    "scripts": {
+        "build": "tsc -p tsconfig.build.json",
+        "typecheck": "tsc -p tsconfig.json --noEmit",
+        "test": "vitest run",
+        "test:coverage": "vitest run --coverage",
+        "test:watch": "vitest"
+    },
+    "dependencies": {
+        "dedent": "^1.6.0"
+    },
+    "devDependencies": {
+        "@types/node": "24.13.6",
+        "@vitest/coverage-v8": "5.0.2",
+        "@vue/test-utils": "2.5.1",
+        "jsdom": "30.1.1",
+        "playcanvas": "2.23.3",
+        "sync-ammo": "^0.1.2",
+        "vitest": "5.0.2",
+        "vue": "3.5.44"
+    },
+    "peerDependencies": {
+        "playcanvas": "^2.11.8",
+        "sync-ammo": "^0.1.2",
+        "vue": "^3.5.0"
+    },
+    "peerDependenciesMeta": {
+        "sync-ammo": {
+            "optional": true
+        }
+    },
+    "engines": {
+        "node": ">=18.0.0"
+    },
+    "publishConfig": {
+        "access": "public"
+    }
+}

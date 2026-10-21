@@ -1,0 +1,21 @@
+{
+    "name": "playcanvas-vue-monorepo",
+    "description": "A monorepo for the PlayCanvas Vue renderer and examples. Please see the packages directory for more information.",
+    "private": true,
+    "license": "MIT",
+    "type": "module",
+    "packageManager": "pnpm@12.6.0",
+    "scripts": {
+        "build": "pnpm --filter @playcanvas/vue run build",
+        "dev": "pnpm --filter @playcanvas/vue-examples run dev",
+        "fmt": "prettier --check packages prettier.config.mjs",
+        "fmt:fix": "prettier --write packages prettier.config.mjs",
+        "test": "pnpm -r run test",
+        "typecheck": "pnpm -r run typecheck"
+    },
+    "devDependencies": {
+        "@playcanvas/eslint-config": "3.0.0-beta.8",
+        "prettier": "3.9.9",
+        "typescript": "6.0.3"
+    }
+}

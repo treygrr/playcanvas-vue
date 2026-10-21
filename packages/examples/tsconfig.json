@@ -1,0 +1,15 @@
+{
+    "extends": "../../tsconfig.json",
+    "compilerOptions": {
+        "noEmit": true,
+        "lib": ["ES2022", "DOM", "DOM.Iterable"],
+        "types": ["vite/client", "node"],
+        "rewriteRelativeImportExtensions": false,
+        "allowImportingTsExtensions": true,
+        "paths": {
+            "@playcanvas/vue": ["../lib/src/index.ts"],
+            "@playcanvas/vue/*": ["../lib/src/*/index.ts"]
+        }
+    },
+    "include": ["src/**/*.ts", "src/**/*.vue", "vite.config.ts"]
+}

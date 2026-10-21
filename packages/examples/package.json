@@ -1,0 +1,22 @@
+{
+    "name": "@playcanvas/vue-examples",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "dev": "vite",
+        "build": "vite build",
+        "typecheck": "vue-tsc --noEmit"
+    },
+    "dependencies": {
+        "@playcanvas/vue": "workspace:*",
+        "playcanvas": "2.23.3",
+        "vue": "3.5.44"
+    },
+    "devDependencies": {
+        "@vitejs/plugin-vue": "6.0.10",
+        "typescript": "6.0.3",
+        "vite": "8.3.4",
+        "vue-tsc": "3.3.13",
+        "@types/node": "24.13.6"
+    }
+}
