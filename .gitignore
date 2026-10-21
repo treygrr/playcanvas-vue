@@ -15,3 +15,8 @@ packages/nuxt/playground/playcanvas/*.zip
 .nuxt
 .output
 .data
+
+# Secrets
+.env
+.env.*
+!.env.example

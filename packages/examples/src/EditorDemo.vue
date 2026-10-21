@@ -1,16 +1,19 @@
 <script setup lang="ts">
 /**
  * Plays a PlayCanvas Editor export. Unzip a "Download" build from the Editor into
- * public/exports/<name>/ and open /editor.html?project=<name>.
+ * public/exports/<name>/ and open /editor.html?project=<name>, or play one from a URL with ?src=<url>.
  */
 import { EditorProject, Entity, Modify } from '@treygrr/playcanvas-vue';
 import { Light, Render } from '@treygrr/playcanvas-vue/components';
 
-const project = new URLSearchParams(location.search).get('project') ?? 'my-first-project';
+const params = new URLSearchParams(location.search);
+const project = params.get('project') ?? 'my-first-project';
+// Or any URL serving an export, eg a published app: ?src=https://playcanv.as/apps/<id>/
+const src = params.get('src') ?? `/exports/${project}/`;
 </script>
 
 <template>
-    <EditorProject :src="`/exports/${project}/`" keyboard-target="window">
+    <EditorProject :src="src" keyboard-target="window">
         <template #loading
             ><p class="status">Loading {{ project }}…</p></template
         >
