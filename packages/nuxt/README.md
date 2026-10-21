@@ -7,7 +7,7 @@ Projects come from two places:
 - **The admin (CMS):** track PlayCanvas projects by id. Their published apps are imported automatically, and you choose which version is live.
 - **Zips in the repo:** drop Editor downloads in `playcanvas/`. Handy for local work and static sites.
 
-Built on [`@treygrr/playcanvas-vue`](https://github.com/treygrr/playcanvas-vue), so you can mix Vue components into the Editor scene.
+Built on [`@treygrr/playcanvas-vue`](https://github.com/treygrr/playcanvas-vue/tree/main/packages/lib#readme), so you can mix Vue components into the Editor scene.
 
 ## Setup
 

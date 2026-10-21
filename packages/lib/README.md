@@ -1,10 +1,8 @@
 # @treygrr/playcanvas-vue
 
-_⚡ A full-featured library for interactive 3D in Vue — because your 3D scene deserves a framework that doesn't re-render it into the ground._
+_⚡ A full-featured library for interactive 3D in Vue._
 
-PlayCanvas already has a lovely [React renderer](https://github.com/playcanvas/react). Which is great, if you enjoy dependency arrays, `useCallback` around everything, and wondering why your effect ran twice. For the rest of us, there's Vue. Real reactivity, templates that read like templates, and no need to memoize your feelings.
-
-So here it is: `@treygrr/playcanvas-vue`, a thin wrapper around [PlayCanvas](https://github.com/playcanvas/engine), a battle-tested real-time 3D engine. It has the same components and features as [`@playcanvas/react`](https://github.com/playcanvas/react), expressed the way nature intended: slots, template refs, `@events`, and composables.
+`@treygrr/playcanvas-vue` is a thin wrapper around [PlayCanvas](https://github.com/playcanvas/engine), a battle-tested real-time 3D engine. It's the Vue counterpart of [`@playcanvas/react`](https://github.com/playcanvas/react), with the same components and features, expressed with Vue idioms: slots, template refs, `@events`, and composables.
 
 ### Features
 
@@ -13,7 +11,7 @@ So here it is: `@treygrr/playcanvas-vue`, a thin wrapper around [PlayCanvas](htt
 - 🛠️ Physics out of the box
 - ⚡ Script component
 - 🧩 glTF scene modification (`<Gltf>` and `<Modify.*>`)
-- 🎮 Plays PlayCanvas Editor projects, with a [Nuxt module](packages/nuxt) for zipped exports
+- 🎮 Plays PlayCanvas Editor projects, with a [Nuxt module](https://github.com/treygrr/playcanvas-vue/tree/main/packages/nuxt#readme) for a full CMS
 - 🔷 Every engine property is a typed Vue prop, checked in templates by `vue-tsc`
 
 ## Getting Started
@@ -145,7 +143,7 @@ import { Render } from '@treygrr/playcanvas-vue/components';
 </template>
 ```
 
-Using Nuxt? [`@treygrr/playcanvas-nuxt`](packages/nuxt) adds a CMS: track your PlayCanvas projects in an admin, and their published builds are imported onto your server, ready to release. Then use `<PlayCanvasScene project="my-game" />` anywhere.
+Using Nuxt? [`@treygrr/playcanvas-nuxt`](https://github.com/treygrr/playcanvas-vue/tree/main/packages/nuxt#readme) adds a CMS: track your PlayCanvas projects in an admin, and their published builds are imported onto your server, ready to release. Then use `<PlayCanvasScene project="my-game" />` anywhere.
 
 ## Coming from `@playcanvas/react`
 
@@ -166,23 +164,6 @@ Using Nuxt? [`@treygrr/playcanvas-nuxt`](packages/nuxt) adds a CMS: track your P
 | `<Gizmo onCommit={fn} />`                    | `<Gizmo @commit="fn" />`                                        |
 
 Deprecated APIs from the React package (`useFrame`, `<OrbitControls>`, `AutoRotator`) are not included. Use `useAppEvent('update', ...)` and the engine's `CameraControls` script instead.
-
-## Development
-
-This is a pnpm workspace:
-
-- `packages/lib`: the `@treygrr/playcanvas-vue` library
-- `packages/nuxt`: the `@treygrr/playcanvas-nuxt` module, with a playground app
-- `packages/examples`: a Vite app using the library from `.vue` files. `editor.html` plays an Editor export from `public/exports/`
-
-```bash
-pnpm install
-pnpm test        # unit tests (Vitest + @vue/test-utils)
-pnpm typecheck   # tsc for the library, vue-tsc for the module and examples
-pnpm build       # build the library and the Nuxt module
-pnpm dev         # run the examples app
-pnpm dev:nuxt    # run the Nuxt playground (put an Editor zip in packages/nuxt/playground/playcanvas/)
-```
 
 ## License
 
