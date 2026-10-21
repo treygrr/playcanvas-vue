@@ -11,7 +11,13 @@ export type VersionOrigin =
     /** A zip uploaded or added by hand */
     | { type: 'zip'; name: string };
 
-export type VersionStatus = 'importing' | 'ready' | 'failed';
+/**
+ * - `available`: known from PlayCanvas, but its files haven't been downloaded
+ * - `importing`: its files are being downloaded
+ * - `ready`: stored, and can be shown
+ * - `failed`: the import failed, see `error`. Retried by later syncs
+ */
+export type VersionStatus = 'available' | 'importing' | 'ready' | 'failed';
 
 /**
  * One version of a project. Its files are stored under its id, and never change once ready.
@@ -26,6 +32,10 @@ export type VersionRecord = {
     status: VersionStatus;
     /** Why the import failed */
     error?: string;
+    /** How many times importing has been tried */
+    attempts?: number;
+    /** When the last import attempt started, as an ISO date */
+    lastAttemptAt?: string;
     /** When the version was published or built, as an ISO date */
     createdAt: string;
     /** When the version finished importing, as an ISO date */
@@ -50,8 +60,13 @@ export type ProjectRecord = {
     versions: VersionRecord[];
     /** The id of the live version, or null when no version is live yet */
     liveVersion: string | null;
-    /** Make newly imported published apps live automatically */
+    /**
+     * Make the PlayCanvas primary app (or newest app, without one) live automatically once imported
+     * @default false
+     */
     autoRelease: boolean;
+    /** Keep the live version as is, even with auto-release on, eg after a rollback */
+    pinned?: boolean;
     /** Take the project offline, without removing it */
     unpublished: boolean;
     /** Take the project offline at this time, as an ISO date */
@@ -129,6 +144,7 @@ export function createProjectRecord(
         versions: [],
         liveVersion: null,
         autoRelease: false,
+        pinned: false,
         unpublished: false,
         expiresAt: null,
         lastSyncAt: null,

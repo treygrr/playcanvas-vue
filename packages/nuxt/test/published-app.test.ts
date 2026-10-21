@@ -12,72 +12,16 @@ import {
 import { createProjectRecord } from '../src/runtime/server/utils/records.ts';
 import { getProject, readVersionFile } from '../src/runtime/server/utils/store.ts';
 
-const app: PlayCanvasApp = {
-    id: 786530,
-    project_id: 1625489,
-    owner_id: 1,
-    name: 'Ball Game',
-    description: null,
-    version: '1.2.0',
-    release_notes: 'Faster ball',
-    thumbnails: null,
-    size: 100,
-    views: 0,
-    completed_at: '2026-10-21T02:51:41.803Z',
-    created_at: '2026-10-21T02:51:40.403Z',
-    modified_at: '2026-10-21T02:51:41.803Z',
-    url: 'https://playcanv.as/b/abc123'
-};
+import type { BuildFiles } from './helpers.ts';
+import { buildConfig, buildFiles, fakeHosting, publishedApp } from './helpers.ts';
 
-const config = {
-    application_properties: { scripts: [1] },
-    scenes: [{ name: 'Main', url: '100.json' }],
-    assets: {
-        '1': { type: 'script', file: { url: '__game-scripts.js' }, data: {} },
-        '2': {
-            type: 'texture',
-            file: {
-                url: 'files/assets/2/1/My%20Ball.png?t=abc',
-                variants: { basis: { url: 'files/assets/2/1/My%20Ball.basis' } }
-            }
-        },
-        '3': { type: 'texture', file: { url: 'https://cdn.example.com/elsewhere.png' } },
-        '4': { type: 'texture', file: { url: '../../secret.json' } },
-        '5': { type: 'material', file: null, data: {} }
-    }
-};
+const app = publishedApp(786530, 'abc123', { version: '1.2.0', release_notes: 'Faster ball' });
 
-/** A fake playcanv.as, serving one published build */
-const fakeHosting = (files: Record<string, string | Uint8Array> = {}) => {
-    const build: Record<string, string | Uint8Array> = {
-        'index.html': '<title>Ball Game</title><script src="playcanvas-stable.min.js"></script>',
-        'playcanvas-stable.min.js': '/** PlayCanvas Engine v2.23.3 */',
-        'config.json': JSON.stringify(config),
-        '100.json': '{"entities":{}}',
-        '__game-scripts.js': 'var Spin = pc.createScript("spin");',
-        'files/assets/2/1/My Ball.png': new Uint8Array([1, 2, 3]),
-        'files/assets/2/1/My Ball.basis': new Uint8Array([4, 5]),
-        ...files
-    };
-    const requested: string[] = [];
-
-    const fetchFn = vi.fn(async (input: string | URL) => {
-        const url = new URL(String(input));
-        requested.push(url.href);
-        if (url.href === 'https://playcanv.as/b/abc123') {
-            return new Response('<iframe allowfullscreen src="https://playcanv.as/apps/abc123/index.html"></iframe>');
-        }
-        const path = decodeURIComponent(url.pathname.replace('/apps/abc123/', ''));
-        const body = url.hostname === 'playcanv.as' ? build[path] : undefined;
-        return body === undefined ? new Response('missing', { status: 404 }) : new Response(body as BodyInit);
-    });
-
-    return { fetch: fetchFn as unknown as typeof fetch, requested };
-};
+const singleBuild = (overrides: BuildFiles = {}) => fakeHosting({ abc123: buildFiles(overrides) });
 
 describe('resolveBuildUrl', () => {
     it('finds the build folder from the app page', async () => {
-        const { fetch } = fakeHosting();
+        const { fetch } = singleBuild();
         expect(String(await resolveBuildUrl(app, fetch))).toBe('https://playcanv.as/apps/abc123/');
     });
 
@@ -90,7 +34,7 @@ describe('resolveBuildUrl', () => {
 
 describe('filesInConfig', () => {
     it('lists scenes, asset files and variants, skipping absolute and data URLs', () => {
-        expect(filesInConfig(config as never).sort()).toEqual([
+        expect(filesInConfig(buildConfig as never).sort()).toEqual([
             '../../secret.json',
             '100.json',
             '__game-scripts.js',
@@ -103,7 +47,7 @@ describe('filesInConfig', () => {
 describe('importPublishedApp', () => {
     it('downloads the build into storage as a version', async () => {
         const storage = createStorage();
-        const { fetch, requested } = fakeHosting();
+        const { fetch, requested } = singleBuild();
         const project = createProjectRecord('ball-game', 'Ball Game', { projectId: 1625489 });
 
         const version = await importPublishedApp(storage, project, app, { fetch });
@@ -138,7 +82,7 @@ describe('importPublishedApp', () => {
 
     it('fails if a file is missing, without adding a version', async () => {
         const storage = createStorage();
-        const { fetch } = fakeHosting({ '100.json': undefined as never });
+        const { fetch } = singleBuild({ '100.json': undefined });
         const project = createProjectRecord('ball-game', 'Ball Game');
 
         await expect(importPublishedApp(storage, project, app, { fetch })).rejects.toThrow(
@@ -149,7 +93,7 @@ describe('importPublishedApp', () => {
 
     it('enforces size limits while downloading', async () => {
         const storage = createStorage();
-        const { fetch } = fakeHosting({ 'files/assets/2/1/My Ball.png': new Uint8Array(4096) });
+        const { fetch } = singleBuild({ 'files/assets/2/1/My Ball.png': new Uint8Array(4096) });
         const project = createProjectRecord('ball-game', 'Ball Game');
 
         await expect(
@@ -159,7 +103,7 @@ describe('importPublishedApp', () => {
 
     it('imports an app once', async () => {
         const storage = createStorage();
-        const { fetch } = fakeHosting();
+        const { fetch } = singleBuild();
         const project = createProjectRecord('ball-game', 'Ball Game');
 
         const first = await importPublishedApp(storage, project, app, { fetch });

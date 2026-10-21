@@ -35,6 +35,24 @@ export async function saveProject(storage: Storage, project: ProjectRecord): Pro
     await storage.setItem(projectKey(project.slug), project);
 }
 
+/**
+ * Re-reads a project, changes it with `mutate`, and saves it. Use this for changes made after slow
+ * work, so changes saved by others in the meantime aren't overwritten.
+ *
+ * @returns The saved project, or null if it no longer exists.
+ */
+export async function updateProject(
+    storage: Storage,
+    slug: string,
+    mutate: (project: ProjectRecord) => void
+): Promise<ProjectRecord | null> {
+    const project = await getProject(storage, slug);
+    if (!project) return null;
+    mutate(project);
+    await saveProject(storage, project);
+    return project;
+}
+
 export async function listProjects(storage: Storage): Promise<ProjectRecord[]> {
     const keys = (await storage.getKeys('projects')).filter((key) => key.endsWith('.json'));
     const projects = await Promise.all(keys.map((key) => storage.getItem<ProjectRecord>(key)));

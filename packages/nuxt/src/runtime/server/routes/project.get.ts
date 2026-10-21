@@ -8,8 +8,10 @@ import {
     useStorage
 } from '#imports';
 
+import { usePlayCanvasClient } from '../utils/context';
 import { resolveVersion } from '../utils/records';
-import { getProject, toPublicProject } from '../utils/store';
+import { getProject, toPublicProject, updateProject } from '../utils/store';
+import { isSyncDue, syncProjectOnce } from '../utils/sync';
 
 /**
  * GET <baseURL>/projects/<slug>.json
@@ -25,7 +27,22 @@ export default defineEventHandler(async (event) => {
     const { preview } = getQuery(event);
     const { baseURL } = useRuntimeConfig().public.playcanvas as { baseURL: string };
 
-    const project = await getProject(useStorage('playcanvas'), slug);
+    const storage = useStorage('playcanvas');
+    const config = useRuntimeConfig().playcanvas as { syncOnRequest?: boolean; syncInterval?: number; token?: string };
+    const project = await getProject(storage, slug);
+
+    // Check PlayCanvas for new published apps in the background, so this response isn't delayed.
+    // Claiming the sync first keeps concurrent requests and server instances from starting their own
+    if (project && config.syncOnRequest && config.token && isSyncDue(project, config.syncInterval ?? 300)) {
+        await updateProject(storage, slug, (p) => {
+            p.lastSyncAt = new Date().toISOString();
+        });
+        const sync = syncProjectOnce(storage, usePlayCanvasClient(), slug).catch((error) =>
+            console.error(`[playcanvas] Sync of "${slug}" failed:`, error)
+        );
+        event.waitUntil(sync);
+    }
+
     const version = project && resolveVersion(project, { preview: typeof preview === 'string' ? preview : null });
 
     if (!project || !version) {

@@ -8,7 +8,9 @@
 export * from '../.nuxt/imports';
 export {
     defineEventHandler,
+    getHeader,
     getQuery,
+    readBody,
     getRouterParam,
     setHeader,
     setHeaders,

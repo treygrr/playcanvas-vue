@@ -38,9 +38,24 @@ export type ModuleOptions = {
      */
     baseURL: string;
     /**
-     * Limits for unpacking zips.
+     * Limits for unpacking zips and published apps.
      */
     limits: UnpackLimits;
+    /**
+     * Syncing tracked PlayCanvas projects with their published apps.
+     */
+    sync: {
+        /**
+         * Check PlayCanvas in the background when a project is requested, at most once per `interval`.
+         * @default true
+         */
+        onRequest: boolean;
+        /**
+         * The least time between syncs of a project, in seconds.
+         * @default 300
+         */
+        interval: number;
+    };
 };
 
 const logger = useLogger('playcanvas');
@@ -72,7 +87,8 @@ export default defineNuxtModule<ModuleOptions>({
         dir: 'playcanvas',
         route: '/play',
         baseURL: '/_playcanvas',
-        limits: defaultLimits
+        limits: defaultLimits,
+        sync: { onRequest: true, interval: 300 }
     },
     async setup(options, nuxt) {
         const resolver = createResolver(import.meta.url);
@@ -140,6 +156,11 @@ export default defineNuxtModule<ModuleOptions>({
             handler: resolver.resolve('./runtime/server/routes/project.get')
         });
         addServerHandler({
+            route: `${baseURL}/api/sync`,
+            method: 'post',
+            handler: resolver.resolve('./runtime/server/routes/sync.post')
+        });
+        addServerHandler({
             route: `${baseURL}/files/**`,
             method: 'get',
             handler: resolver.resolve('./runtime/server/routes/files.get')
@@ -154,9 +175,13 @@ export default defineNuxtModule<ModuleOptions>({
 
         nuxt.options.runtimeConfig.public.playcanvas = { baseURL };
 
-        // Server only: the PlayCanvas API token, set at runtime with NUXT_PLAYCANVAS_TOKEN
+        // Server only. The PlayCanvas API token and sync secret are set at runtime with
+        // NUXT_PLAYCANVAS_TOKEN and NUXT_PLAYCANVAS_SYNC_SECRET
         nuxt.options.runtimeConfig.playcanvas = {
             token: '',
+            syncSecret: '',
+            syncOnRequest: options.sync.onRequest,
+            syncInterval: options.sync.interval,
             ...(nuxt.options.runtimeConfig.playcanvas as Record<string, unknown> | undefined)
         };
 
