@@ -132,7 +132,8 @@ export function readyVersion(
 
 /**
  * Validates a zip, stores its files as a new version of `project`, and adds the version to the
- * record. The record is not saved, and the version doesn't go live.
+ * record. The record is not saved, and the version doesn't go live. The version id defaults to a
+ * hash of the zip.
  *
  * @returns The new version, or the existing one if this zip was already imported.
  */
@@ -140,19 +141,29 @@ export async function importZip(
     storage: Storage,
     project: ProjectRecord,
     zip: Uint8Array,
-    origin: VersionOrigin & { type: 'zip' },
-    limits?: UnpackLimits
+    origin: VersionOrigin,
+    limits?: UnpackLimits,
+    info: ImportedVersionInfo = {}
 ): Promise<VersionRecord> {
-    const unpacked = await unpackExport(zip, origin.name, limits);
+    const name = origin.type === 'zip' ? origin.name : `${project.title} (${origin.type} build)`;
+    const unpacked = await unpackExport(zip, name, limits);
+    const id = info.id ?? unpacked.version;
 
-    const existing = project.versions.find((version) => version.id === unpacked.version);
+    const existing = project.versions.find((version) => version.id === id);
     if (existing?.status === 'ready') return existing;
 
-    const size = await writeVersionFiles(storage, project.slug, unpacked.version, unpacked.files);
-    const version = readyVersion(unpacked, origin, size);
+    const size = await writeVersionFiles(storage, project.slug, id, unpacked.files);
+    const version = readyVersion(unpacked, origin, size, { ...info, id });
 
     project.versions = [...project.versions.filter((v) => v.id !== version.id), version];
     return version;
+}
+
+/** Replaces a version in a project, keeping its preview token so preview links keep working */
+export function putVersion(project: ProjectRecord, version: VersionRecord): void {
+    const existing = project.versions.find((v) => v.id === version.id);
+    const merged = existing ? { ...version, previewToken: existing.previewToken } : version;
+    project.versions = [...project.versions.filter((v) => v.id !== version.id), merged];
 }
 
 /**

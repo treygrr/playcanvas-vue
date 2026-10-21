@@ -103,6 +103,45 @@ watch(
     { immediate: true }
 );
 
+// Scheduling a release
+const scheduling = ref<string | null>(null);
+const scheduleAt = ref('');
+
+const startScheduling = (version: AdminVersion) => {
+    scheduling.value = version.id;
+    scheduleAt.value = '';
+};
+
+async function schedule(version: AdminVersion) {
+    await update(
+        { scheduledRelease: { versionId: version.id, at: new Date(scheduleAt.value).toISOString() } },
+        `${versionName(version)} goes live ${formatDate(new Date(scheduleAt.value).toISOString())}.`
+    );
+    if (!error.value) scheduling.value = null;
+}
+
+const scheduledVersion = computed(() =>
+    project.value?.versions.find((v) => v.id === project.value?.scheduledRelease?.versionId)
+);
+
+// Building a branch
+const branches = ref<{ id: string; name: string }[] | null>(null);
+const branchId = ref('');
+
+async function loadBranches() {
+    await run('branches', async () => {
+        branches.value = (await api.branches(slug.value)).branches;
+        branchId.value = branches.value.find((b) => b.name === 'main')?.id ?? branches.value[0]?.id ?? '';
+    });
+}
+
+const buildBranch = () =>
+    run(
+        'build',
+        () => api.buildBranch(slug.value, branchId.value),
+        'Building. The version appears below, and gets a preview link once it has been imported.'
+    );
+
 const versionName = (version: AdminVersion) => version.label ?? version.title ?? version.id;
 
 const isLive = (version: AdminVersion) => project.value?.liveVersion === version.id;
@@ -110,14 +149,14 @@ const isLive = (version: AdminVersion) => project.value?.liveVersion === version
 const statusChip = (version: AdminVersion) =>
     ({
         available: { label: 'Not downloaded', tone: '' },
-        importing: { label: 'Importing…', tone: 'warn' },
+        importing: { label: version.origin.type === 'branch' ? 'Building…' : 'Importing…', tone: 'warn' },
         ready: { label: 'Ready', tone: '' },
         failed: { label: 'Failed', tone: 'bad' }
     })[version.status];
 
 const origin = (version: AdminVersion) => {
     if (version.origin.type === 'app') return `Published app ${version.origin.appId}`;
-    if (version.origin.type === 'branch') return 'Branch build';
+    if (version.origin.type === 'branch') return `Branch build, job ${version.origin.jobId}`;
     return version.origin.name;
 };
 
@@ -169,6 +208,25 @@ onBeforeUnmount(() => clearInterval(timer));
 
         <template v-if="project">
             <p v-if="offline" class="pc-alert pc-alert--info">{{ offline }}</p>
+
+            <div v-if="project.scheduledRelease" class="pc-alert pc-alert--info pc-row">
+                <span>
+                    <strong>{{
+                        scheduledVersion ? versionName(scheduledVersion) : project.scheduledRelease.versionId
+                    }}</strong>
+                    goes live {{ formatDate(project.scheduledRelease.at) }}
+                    <span class="pc-muted">({{ formatRelative(project.scheduledRelease.at) }})</span>
+                </span>
+                <span class="pc-spacer" />
+                <button
+                    class="pc-button"
+                    type="button"
+                    :disabled="busy !== null"
+                    @click="update({ scheduledRelease: null }, 'Scheduled release cancelled.')"
+                >
+                    Cancel
+                </button>
+            </div>
 
             <section class="pc-card">
                 <div class="pc-row">
@@ -293,6 +351,12 @@ onBeforeUnmount(() => clearInterval(timer));
                                 <td class="pc-muted">{{ formatDate(version.createdAt) }}</td>
                                 <td>
                                     <span v-if="isLive(version)" class="pc-chip pc-chip--good">Live</span>
+                                    <span
+                                        v-else-if="project.scheduledRelease?.versionId === version.id"
+                                        class="pc-chip pc-chip--warn"
+                                    >
+                                        Scheduled
+                                    </span>
                                     <span v-else :class="`pc-chip pc-chip--${statusChip(version).tone}`">
                                         {{ statusChip(version).label }}
                                     </span>
@@ -309,7 +373,46 @@ onBeforeUnmount(() => clearInterval(timer));
                                             Make live
                                         </button>
                                         <button
-                                            v-if="version.status === 'available' || version.status === 'failed'"
+                                            v-if="
+                                                version.status === 'ready' &&
+                                                !isLive(version) &&
+                                                scheduling !== version.id
+                                            "
+                                            class="pc-button"
+                                            type="button"
+                                            :disabled="busy !== null"
+                                            @click="startScheduling(version)"
+                                        >
+                                            Schedule
+                                        </button>
+                                        <form
+                                            v-if="scheduling === version.id"
+                                            class="pc-row pc-schedule"
+                                            @submit.prevent="schedule(version)"
+                                        >
+                                            <input
+                                                v-model="scheduleAt"
+                                                class="pc-input"
+                                                type="datetime-local"
+                                                required
+                                                aria-label="Release time"
+                                            />
+                                            <button
+                                                class="pc-button pc-button--primary"
+                                                type="submit"
+                                                :disabled="!scheduleAt || busy !== null"
+                                            >
+                                                Schedule
+                                            </button>
+                                            <button class="pc-button" type="button" @click="scheduling = null">
+                                                Cancel
+                                            </button>
+                                        </form>
+                                        <button
+                                            v-if="
+                                                (version.status === 'available' || version.status === 'failed') &&
+                                                version.origin.type === 'app'
+                                            "
                                             class="pc-button"
                                             type="button"
                                             :disabled="busy !== null"
@@ -344,6 +447,40 @@ onBeforeUnmount(() => clearInterval(timer));
                         </tbody>
                     </table>
                 </div>
+            </section>
+
+            <section v-if="project.playcanvas" class="pc-card">
+                <h2>Build a branch</h2>
+                <p class="pc-muted">
+                    Build a branch's current state, including work that isn't published, and import it as a preview
+                    version. It only goes live if you make it live.
+                </p>
+                <button
+                    v-if="!branches"
+                    class="pc-button"
+                    type="button"
+                    :disabled="busy !== null"
+                    @click="loadBranches"
+                >
+                    {{ busy === 'branches' ? 'Loading branches…' : 'Choose a branch' }}
+                </button>
+                <form v-else class="pc-row" @submit.prevent="buildBranch">
+                    <label class="pc-field">
+                        Branch
+                        <select v-model="branchId" class="pc-input" required>
+                            <option v-for="branch in branches" :key="branch.id" :value="branch.id">
+                                {{ branch.name }}
+                            </option>
+                        </select>
+                    </label>
+                    <button
+                        class="pc-button pc-button--primary pc-build"
+                        type="submit"
+                        :disabled="!branchId || busy !== null"
+                    >
+                        {{ busy === 'build' ? 'Starting…' : 'Build preview' }}
+                    </button>
+                </form>
             </section>
 
             <section class="pc-card">
@@ -382,6 +519,13 @@ onBeforeUnmount(() => clearInterval(timer));
 
 .pc-actions {
     justify-content: flex-end;
+}
+
+.pc-schedule {
     flex-wrap: nowrap;
+}
+
+.pc-build {
+    align-self: flex-end;
 }
 </style>

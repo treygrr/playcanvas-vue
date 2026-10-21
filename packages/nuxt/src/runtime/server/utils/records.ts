@@ -71,6 +71,8 @@ export type ProjectRecord = {
     unpublished: boolean;
     /** Take the project offline at this time, as an ISO date */
     expiresAt: string | null;
+    /** Make a version live at a set time, as an ISO date */
+    scheduledRelease?: { versionId: string; at: string } | null;
     /** When PlayCanvas was last checked for new published apps, as an ISO date */
     lastSyncAt: string | null;
     createdAt: string;
@@ -104,7 +106,33 @@ export function resolveVersion(project: ProjectRecord, options: ResolveOptions =
     if (project.unpublished) return null;
     if (project.expiresAt && new Date(project.expiresAt) <= now) return null;
 
-    return ready.find((version) => version.id === project.liveVersion) ?? null;
+    const liveId = dueRelease(project, now) ?? project.liveVersion;
+    return ready.find((version) => version.id === liveId) ?? null;
+}
+
+/**
+ * The version of a scheduled release that is due, if it's ready to go live.
+ */
+export function dueRelease(project: ProjectRecord, now = new Date()): string | null {
+    const scheduled = project.scheduledRelease;
+    if (!scheduled || new Date(scheduled.at) > now) return null;
+    const version = project.versions.find((v) => v.id === scheduled.versionId);
+    return version?.status === 'ready' ? version.id : null;
+}
+
+/**
+ * Makes a due scheduled release the live version, and clears the schedule. With auto-release on,
+ * the version is pinned, so the next sync doesn't replace it.
+ *
+ * @returns Whether the project changed.
+ */
+export function applyDueRelease(project: ProjectRecord, now = new Date()): boolean {
+    const versionId = dueRelease(project, now);
+    if (!versionId) return false;
+    project.liveVersion = versionId;
+    project.scheduledRelease = null;
+    if (project.autoRelease) project.pinned = true;
+    return true;
 }
 
 /**
@@ -147,6 +175,7 @@ export function createProjectRecord(
         pinned: false,
         unpublished: false,
         expiresAt: null,
+        scheduledRelease: null,
         lastSyncAt: null,
         createdAt: new Date().toISOString()
     };

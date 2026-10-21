@@ -38,11 +38,12 @@ export type AdminProject = {
     pinned: boolean;
     unpublished: boolean;
     expiresAt: string | null;
+    scheduledRelease: { versionId: string; at: string } | null;
     lastSyncAt: string | null;
     createdAt: string;
 };
 
-export type AdminProjectSummary = Omit<AdminProject, 'versions' | 'createdAt'> & {
+export type AdminProjectSummary = Omit<AdminProject, 'versions' | 'createdAt' | 'scheduledRelease'> & {
     liveLabel: string | null;
     versions: number;
     importing: number;
@@ -99,6 +100,15 @@ export function useAdminApi() {
         sync: (slug: string) =>
             request<{ result: SyncResult; project: AdminProject }>(`projects/${encodeURIComponent(slug)}/sync`, {
                 method: 'POST'
+            }),
+        branches: (slug: string) =>
+            request<{ branches: { id: string; name: string }[]; scenes: { id: number; name: string }[] }>(
+                `projects/${encodeURIComponent(slug)}/branches`
+            ),
+        buildBranch: (slug: string, branchId: string) =>
+            request<AdminProject>(`projects/${encodeURIComponent(slug)}/builds`, {
+                method: 'POST',
+                body: { branchId }
             }),
         importVersion: (slug: string, id: string) =>
             request<AdminProject>(`projects/${encodeURIComponent(slug)}/versions/${encodeURIComponent(id)}/import`, {

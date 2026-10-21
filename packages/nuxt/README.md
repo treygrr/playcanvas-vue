@@ -41,6 +41,8 @@ Per project you can also:
 - **Auto-release** (off by default): make the Editor's primary app live as soon as it's imported, so publishing in the Editor is the release. Changing the primary app back is a rollback.
 - **Pin**: keep the current version when auto-release is on. Choosing a version by hand pins it.
 - **Go offline**, now or at a set time. Visitors get a 404; preview links still work.
+- **Schedule a release**: make a downloaded version live at a set time, eg for a launch. It's live from that moment, with no background job needed, so it works on serverless hosts too.
+- **Build a branch**: build a branch's current state, including work that isn't published, and import it as a preview version. It only goes live if you make it live. PlayCanvas allows a few builds a minute, so builds only start when you ask.
 
 ### Syncing
 

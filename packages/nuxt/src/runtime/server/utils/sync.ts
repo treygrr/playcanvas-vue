@@ -6,7 +6,9 @@ import type { ImportOptions } from './published-app';
 import { appVersionId, importPublishedApp } from './published-app';
 import type { ProjectRecord, VersionRecord } from './records';
 import { createToken } from './records';
-import { getProject, listProjects, updateProject } from './store';
+import { finishBranchBuild } from './branch-build';
+import { applyDueRelease } from './records';
+import { getProject, listProjects, putVersion, updateProject } from './store';
 
 export type SyncOptions = ImportOptions & {
     /** Defaults to the current time */
@@ -51,13 +53,6 @@ function availableVersion(app: PlayCanvasApp): VersionRecord {
     };
 }
 
-/** Replaces a version in a project, keeping its preview token so preview links keep working */
-export function putVersion(project: ProjectRecord, version: VersionRecord): void {
-    const existing = project.versions.find((v) => v.id === version.id);
-    const merged = existing ? { ...version, previewToken: existing.previewToken } : version;
-    project.versions = [...project.versions.filter((v) => v.id !== version.id), merged];
-}
-
 /**
  * Brings a tracked PlayCanvas project up to date:
  *
@@ -82,6 +77,21 @@ export async function syncProject(
     const project = await getProject(storage, slug);
     if (!project?.playcanvas) return { ...result, error: 'not a PlayCanvas project' };
     const { projectId } = project.playcanvas;
+
+    // Save a scheduled release that has come due
+    await updateProject(storage, slug, (p) => {
+        applyDueRelease(p, now);
+    });
+
+    // Resume branch builds interrupted by a restart, without waiting on ones still running
+    for (const version of project.versions) {
+        const stalled = now.getTime() - Date.parse(version.lastAttemptAt ?? version.createdAt) > 60_000;
+        if (version.origin.type === 'branch' && version.status === 'importing' && stalled) {
+            const finished = await finishBranchBuild(storage, client, slug, version.id, { ...options, waitMs: 0 });
+            if (finished?.status === 'ready') result.imported.push(version.id);
+            if (finished?.status === 'failed') result.failed.push(version.id);
+        }
+    }
 
     let apps: PlayCanvasApp[];
     let primary: PlayCanvasApp | null;
@@ -113,7 +123,7 @@ export async function syncProject(
     const current = (await getProject(storage, slug))!;
     const toImport = apps.filter((app) => {
         const version = current.versions.find((v) => v.id === appVersionId(app));
-        if (!version || version.status === 'ready') return false;
+        if (!version || version.status === 'ready' || version.origin.type !== 'app') return false;
         if (version.status === 'available') return wanted.has(version.id);
         return shouldRetry(version, now);
     });

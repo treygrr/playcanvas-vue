@@ -11,13 +11,14 @@ import {
 } from '#imports';
 
 import { checkPasswordLogin, getAuthState, requireAdmin, useAdminSession } from '../utils/auth';
+import { finishBranchBuild, startBranchBuild } from '../utils/branch-build';
 import { usePlayCanvasClient } from '../utils/context';
 import { safePathSegments } from '../utils/paths';
 import { PlayCanvasApiError } from '../utils/playcanvas-api';
 import { addPlayCanvasProject, importPublishedApp } from '../utils/published-app';
 import type { ProjectRecord, VersionRecord } from '../utils/records';
-import { deleteProject, getProject, listProjects, updateProject } from '../utils/store';
-import { putVersion, syncProjectOnce } from '../utils/sync';
+import { deleteProject, getProject, listProjects, putVersion, updateProject } from '../utils/store';
+import { syncProjectOnce } from '../utils/sync';
 
 type RepoProject = { slug: string; title: string; version: string };
 
@@ -80,6 +81,7 @@ type ProjectPatch = {
     unpublished: boolean;
     expiresAt: string | null;
     liveVersion: string | null;
+    scheduledRelease: { versionId: string; at: string } | null;
 };
 
 /** Validates and applies a project update */
@@ -121,6 +123,28 @@ function applyPatch(project: ProjectRecord, patch: Partial<ProjectPatch>): void 
         // Choosing a version by hand pins it, so auto-release doesn't replace it on the next sync
         if (project.autoRelease && patch.pinned === undefined) project.pinned = true;
     }
+
+    if (patch.scheduledRelease !== undefined) {
+        const scheduled = patch.scheduledRelease;
+        if (scheduled !== null) {
+            if (
+                typeof scheduled !== 'object' ||
+                typeof scheduled.versionId !== 'string' ||
+                typeof scheduled.at !== 'string'
+            ) {
+                bad('scheduledRelease must be { versionId, at }, or null');
+            }
+            const version = project.versions.find((v) => v.id === scheduled.versionId);
+            if (!version) bad(`There is no version "${scheduled.versionId}"`);
+            if (version!.status !== 'ready') bad(`Version "${scheduled.versionId}" isn't imported yet`);
+            const at = Date.parse(scheduled.at);
+            if (Number.isNaN(at)) bad('scheduledRelease.at must be a date');
+            if (at <= Date.now()) bad('The release time must be in the future');
+            project.scheduledRelease = { versionId: scheduled.versionId, at: new Date(at).toISOString() };
+        } else {
+            project.scheduledRelease = null;
+        }
+    }
 }
 
 /**
@@ -135,6 +159,8 @@ function applyPatch(project: ProjectRecord, patch: Partial<ProjectPatch>): void 
  *   PATCH  projects/<slug> { … }                 update settings, or the live version
  *   DELETE projects/<slug>                       stop tracking a project, deleting its files
  *   POST   projects/<slug>/sync                  check PlayCanvas for new published apps now
+ *   GET    projects/<slug>/branches              branches and scenes that can be built
+ *   POST   projects/<slug>/builds { branchId }   build a branch as a preview version
  *   POST   projects/<slug>/versions/<id>/import  download a version that's only available
  */
 export default defineEventHandler(async (event) => {
@@ -227,6 +253,51 @@ export default defineEventHandler(async (event) => {
         }
 
         throw createError({ statusCode: 405 });
+    }
+
+    // projects/<slug>/branches: what can be built
+    if (sub === 'branches' && !id && method === 'GET') {
+        const project = await requireProject(slug);
+        if (!project.playcanvas) throw createError({ statusCode: 400, statusMessage: 'Not a PlayCanvas project' });
+        const client = usePlayCanvasClient();
+        const [branches, scenes] = await Promise.all([
+            client.listBranches(project.playcanvas.projectId),
+            client.listScenes(project.playcanvas.projectId)
+        ]).catch(apiError);
+        return {
+            branches: branches.filter((branch) => !branch.closed).map(({ id, name }) => ({ id, name })),
+            scenes: scenes.map(({ id, name }) => ({ id, name }))
+        };
+    }
+
+    // projects/<slug>/builds { branchId, sceneIds? }: build a branch as a preview version
+    if (sub === 'builds' && !id && method === 'POST') {
+        await requireProject(slug);
+        const { branchId, sceneIds } = await readJson<{ branchId: string; sceneIds: number[] }>(event);
+        if (typeof branchId !== 'string' || !branchId) {
+            throw createError({ statusCode: 400, statusMessage: 'branchId is required' });
+        }
+        if (sceneIds !== undefined && (!Array.isArray(sceneIds) || !sceneIds.every(Number.isInteger))) {
+            throw createError({ statusCode: 400, statusMessage: 'sceneIds must be scene ids' });
+        }
+
+        const client = usePlayCanvasClient();
+        const version = await startBranchBuild(storage, client, slug, { branchId, sceneIds }).catch((error) => {
+            if (error instanceof PlayCanvasApiError) {
+                if (error.status === 429) {
+                    throw createError({
+                        statusCode: 429,
+                        statusMessage: `PlayCanvas only allows a few builds a minute. Try again in ${error.retryAfterSeconds ?? 60} seconds.`
+                    });
+                }
+                apiError(error);
+            }
+            throw createError({ statusCode: 400, statusMessage: (error as Error).message });
+        });
+
+        // Wait for the build and import it in the background
+        event.waitUntil(finishBranchBuild(storage, client, slug, version.id).catch((error) => console.error(error)));
+        return projectDetail((await getProject(storage, slug))!);
     }
 
     // projects/<slug>/sync

@@ -9,7 +9,7 @@ import {
 } from '#imports';
 
 import { usePlayCanvasClient } from '../utils/context';
-import { resolveVersion } from '../utils/records';
+import { applyDueRelease, dueRelease, resolveVersion } from '../utils/records';
 import { getProject, toPublicProject, updateProject } from '../utils/store';
 import { isSyncDue, syncProjectOnce } from '../utils/sync';
 
@@ -29,7 +29,14 @@ export default defineEventHandler(async (event) => {
 
     const storage = useStorage('playcanvas');
     const config = useRuntimeConfig().playcanvas as { syncOnRequest?: boolean; syncInterval?: number; token?: string };
-    const project = await getProject(storage, slug);
+    let project = await getProject(storage, slug);
+
+    // Save a scheduled release once it's due. It's shown from that moment either way
+    if (project && dueRelease(project)) {
+        project = await updateProject(storage, slug, (p) => {
+            applyDueRelease(p);
+        });
+    }
 
     // Check PlayCanvas for new published apps in the background, so this response isn't delayed.
     // Claiming the sync first keeps concurrent requests and server instances from starting their own
