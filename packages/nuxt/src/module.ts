@@ -154,6 +154,12 @@ export default defineNuxtModule<ModuleOptions>({
 
         nuxt.options.runtimeConfig.public.playcanvas = { baseURL };
 
+        // Server only: the PlayCanvas API token, set at runtime with NUXT_PLAYCANVAS_TOKEN
+        nuxt.options.runtimeConfig.playcanvas = {
+            token: '',
+            ...(nuxt.options.runtimeConfig.playcanvas as Record<string, unknown> | undefined)
+        };
+
         // Re-unpack zips as they change in development. The folder is outside the app source, so
         // Nuxt's own watcher doesn't see it
         if (nuxt.options.dev) {

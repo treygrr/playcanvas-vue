@@ -40,7 +40,7 @@ export const slugify = (name: string): string =>
  * Checks that a zip entry name is a plain relative path, so that it can't be written outside the
  * output folder ("zip slip"): no absolute paths, drive letters, backslashes, or `..` segments.
  */
-const isSafeEntryName = (name: string) =>
+export const isSafeEntryName = (name: string) =>
     name.length > 0 &&
     !name.includes('\0') &&
     !name.includes('\\') &&
@@ -112,6 +112,40 @@ export async function unpackExport(
     const actualSize = Object.values(entries).reduce((sum, data) => sum + data.length, 0);
     if (actualSize > limits.maxSize) throw new UnpackError(zipName, `unpacks to more than ${limits.maxSize} bytes`);
 
+    return prepareExport(entries, zipName, await contentHash(zip));
+}
+
+/**
+ * Parses and checks the `config.json` of an export.
+ *
+ * @param data The file contents.
+ * @param name The export's name, for error messages.
+ */
+export function parseConfig(data: Uint8Array, name: string): EditorConfig {
+    let config: EditorConfig;
+    try {
+        config = JSON.parse(strFromU8(data));
+    } catch {
+        throw new UnpackError(name, 'config.json is not valid JSON');
+    }
+    if (!config || typeof config !== 'object' || !Array.isArray(config.scenes) || typeof config.assets !== 'object') {
+        throw new UnpackError(name, 'config.json is not a PlayCanvas project config');
+    }
+    if (config.scenes.length === 0) throw new UnpackError(name, 'the project has no scenes');
+    return config;
+}
+
+/**
+ * Checks the files of an export, and picks out the ones to serve: everything but the launch page.
+ * The title and engine version are read from the launch page, as text.
+ *
+ * @param entries The export's files, by path. They can be inside a folder.
+ * @param name The export's name, for error messages and as a fallback title.
+ * @param version The version id.
+ */
+export function prepareExport(entries: Record<string, Uint8Array>, name: string, version: string): UnpackedExport {
+    const zipName = name;
+
     // Exports are usually flat, but re-zipped ones can be inside a folder
     const configPath = Object.keys(entries)
         .filter((name) => basename(name) === 'config.json')
@@ -119,16 +153,7 @@ export async function unpackExport(
     if (!configPath) throw new UnpackError(zipName, 'no config.json found. Is this an Editor "Download" build?');
     const root = dirname(configPath) === '.' ? '' : `${dirname(configPath)}/`;
 
-    let config: EditorConfig;
-    try {
-        config = JSON.parse(strFromU8(entries[configPath]!));
-    } catch {
-        throw new UnpackError(zipName, 'config.json is not valid JSON');
-    }
-    if (!config || typeof config !== 'object' || !Array.isArray(config.scenes) || typeof config.assets !== 'object') {
-        throw new UnpackError(zipName, 'config.json is not a PlayCanvas project config');
-    }
-    if (config.scenes.length === 0) throw new UnpackError(zipName, 'the project has no scenes');
+    const config = parseConfig(entries[configPath]!, zipName);
 
     const files = new Map<string, Uint8Array>();
     for (const [name, data] of Object.entries(entries)) {
@@ -148,8 +173,6 @@ export async function unpackExport(
     const engineFile = Object.keys(entries).find((name) => /^playcanvas[\w.-]*\.js$/.test(basename(name)));
     const engineHeader = engineFile ? strFromU8(entries[engineFile]!.subarray(0, 512)) : '';
     const engineVersion = engineHeader.match(/PlayCanvas Engine v(\d+\.\d+\.\d+)/)?.[1] ?? null;
-
-    const version = await contentHash(zip);
 
     return { version, title, engineVersion, config, files };
 }
