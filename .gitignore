@@ -9,3 +9,9 @@ coverage
 
 # Local PlayCanvas Editor exports for the editor demo
 packages/examples/public/exports/
+
+# Local PlayCanvas exports for the Nuxt playground
+packages/nuxt/playground/playcanvas/*.zip
+.nuxt
+.output
+.data

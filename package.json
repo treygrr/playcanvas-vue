@@ -10,12 +10,14 @@
     "type": "module",
     "packageManager": "pnpm@12.6.0",
     "scripts": {
-        "build": "pnpm --filter @treygrr/playcanvas-vue run build",
+        "build:lib": "pnpm --filter @treygrr/playcanvas-vue build",
+        "build": "pnpm build:lib && pnpm --filter @treygrr/playcanvas-nuxt build",
         "dev": "pnpm --filter @treygrr/playcanvas-vue-examples run dev",
+        "dev:nuxt": "pnpm build:lib && pnpm --filter @treygrr/playcanvas-nuxt run dev",
         "fmt": "prettier --check packages prettier.config.mjs",
         "fmt:fix": "prettier --write packages prettier.config.mjs",
-        "test": "pnpm -r run test",
-        "typecheck": "pnpm -r run typecheck"
+        "test": "pnpm build:lib && pnpm -r run test",
+        "typecheck": "pnpm build:lib && pnpm -r run typecheck"
     },
     "devDependencies": {
         "@playcanvas/eslint-config": "3.0.0-beta.8",

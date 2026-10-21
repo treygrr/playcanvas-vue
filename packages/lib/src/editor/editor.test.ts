@@ -153,8 +153,11 @@ describe('loadEditorProject', () => {
         const { app } = await mountScene();
         loadScene(app);
 
+        app.graphicsDevice.canvas.style.width = '100%';
         await loadEditorProject(app, manifest, { base: '/x/' });
         expect(app.fillMode).toBe(FILLMODE_NONE);
+        // Not left at the window size the project's fill mode set
+        expect(app.graphicsDevice.canvas.style.width).toBe('100%');
 
         await loadEditorProject(app, manifest, { base: '/x/', useProjectCanvasSettings: true });
         expect(app.fillMode).toBe('FILL_WINDOW');

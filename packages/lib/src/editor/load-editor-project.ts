@@ -101,13 +101,19 @@ export function loadEditorProject(
             app.systems.rigidbody?.onLibraryLoaded();
         }
 
-        // The config overrides the canvas settings, which belong to the application unless asked otherwise
+        // The config overrides the canvas settings, which belong to the application unless asked otherwise.
+        // Switching fill mode writes the window size into the canvas style, so that is restored too.
         const { fillMode, resolutionMode } = app;
+        const { canvas } = app.graphicsDevice;
+        const { width, height } = canvas.style;
         await callbackToPromise((done) => app.configure(joinUrl(base, manifest.config), done));
         if (isDestroyed(app)) throw new Error('The application was destroyed while loading');
         if (!useProjectCanvasSettings) {
             app.setCanvasFillMode(fillMode);
             app.setCanvasResolution(resolutionMode);
+            canvas.style.width = width;
+            canvas.style.height = height;
+            app.updateCanvasSize();
         }
 
         await new Promise<void>((resolve) => app.preload(() => resolve()));

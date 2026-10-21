@@ -47,6 +47,10 @@
         "./utils": {
             "types": "./dist/utils/index.d.ts",
             "import": "./dist/utils/index.js"
+        },
+        "./editor/manifest": {
+            "types": "./dist/editor/manifest.d.ts",
+            "import": "./dist/editor/manifest.js"
         }
     },
     "main": "dist/index.js",

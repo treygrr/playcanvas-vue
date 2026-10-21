@@ -1,0 +1,65 @@
+{
+    "name": "@treygrr/playcanvas-nuxt",
+    "version": "0.1.0",
+    "description": "Play PlayCanvas Editor exports in Nuxt: drop a zip in playcanvas/, use <PlayCanvasScene> anywhere.",
+    "keywords": [
+        "nuxt",
+        "nuxt-module",
+        "playcanvas",
+        "vue",
+        "3d",
+        "webgl",
+        "webgpu"
+    ],
+    "homepage": "https://github.com/treygrr/playcanvas-vue#readme",
+    "bugs": {
+        "url": "https://github.com/treygrr/playcanvas-vue/issues"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/treygrr/playcanvas-vue",
+        "directory": "packages/nuxt"
+    },
+    "license": "MIT",
+    "type": "module",
+    "exports": {
+        ".": {
+            "types": "./dist/types.d.mts",
+            "import": "./dist/module.mjs"
+        }
+    },
+    "main": "./dist/module.mjs",
+    "files": [
+        "dist"
+    ],
+    "scripts": {
+        "build": "nuxt-module-build build",
+        "dev": "nuxt dev playground",
+        "dev:build": "nuxt build playground",
+        "dev:prepare": "nuxt-module-build build --stub && nuxt-module-build prepare && nuxt prepare playground",
+        "test": "nuxt-module-build prepare && vitest run",
+        "typecheck": "nuxt-module-build prepare && vue-tsc --noEmit"
+    },
+    "dependencies": {
+        "@nuxt/kit": "4.6.0",
+        "@treygrr/playcanvas-vue": "workspace:*",
+        "fflate": "0.8.2"
+    },
+    "devDependencies": {
+        "@nuxt/module-builder": "1.0.3",
+        "@nuxt/schema": "4.6.0",
+        "@types/node": "24.13.6",
+        "nuxt": "4.6.0",
+        "playcanvas": "2.23.3",
+        "typescript": "6.0.3",
+        "vitest": "5.0.2",
+        "vue": "3.5.44",
+        "vue-tsc": "3.3.13"
+    },
+    "peerDependencies": {
+        "playcanvas": "^2.11.8"
+    },
+    "publishConfig": {
+        "access": "public"
+    }
+}

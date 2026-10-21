@@ -13,6 +13,7 @@ So here it is: `@treygrr/playcanvas-vue`, a thin wrapper around [PlayCanvas](htt
 - 🛠️ Physics out of the box
 - ⚡ Script component
 - 🧩 glTF scene modification (`<Gltf>` and `<Modify.*>`)
+- 🎮 Plays PlayCanvas Editor projects, with a [Nuxt module](packages/nuxt) for zipped exports
 - 🔷 Every engine property is a typed Vue prop, checked in templates by `vue-tsc`
 
 ## Getting Started
@@ -116,6 +117,36 @@ const { asset, loading, error } = useModel('/statue.glb');
 </template>
 ```
 
+### Playing PlayCanvas Editor projects
+
+Build scenes in the [PlayCanvas Editor](https://playcanvas.com), then play them in Vue. Download a build from the Editor, unzip it into `public/`, and point `<EditorProject>` at it. Your Editor scripts, physics and UI keep working, and Vue children are added to the scene.
+
+```vue
+<script setup lang="ts">
+import { EditorProject, Entity, Modify } from '@treygrr/playcanvas-vue';
+import { Render } from '@treygrr/playcanvas-vue/components';
+</script>
+
+<template>
+    <!-- the Editor download unzipped into public/exports/my-game/ -->
+    <EditorProject src="/exports/my-game/" class="h-96">
+        <template #loading>Loading…</template>
+
+        <!-- Change entities from the Editor scene -->
+        <Modify.Node path="**.Light">
+            <Modify.Light :intensity="(value) => value * 1.5" />
+        </Modify.Node>
+
+        <!-- Or add your own -->
+        <Entity :position="[0, 2, 0]">
+            <Render type="cone" />
+        </Entity>
+    </EditorProject>
+</template>
+```
+
+Using Nuxt? [`@treygrr/playcanvas-nuxt`](packages/nuxt) unpacks the zips for you: drop them in `playcanvas/` and use `<PlayCanvasScene project="my-game" />` anywhere.
+
 ## Coming from `@playcanvas/react`
 
 | React                                        | Vue                                                             |
@@ -140,15 +171,17 @@ Deprecated APIs from the React package (`useFrame`, `<OrbitControls>`, `AutoRota
 
 This is a pnpm workspace:
 
-- `packages/lib` — the `@treygrr/playcanvas-vue` library
-- `packages/examples` — a Vite app using the library from `.vue` files
+- `packages/lib`: the `@treygrr/playcanvas-vue` library
+- `packages/nuxt`: the `@treygrr/playcanvas-nuxt` module, with a playground app
+- `packages/examples`: a Vite app using the library from `.vue` files. `editor.html` plays an Editor export from `public/exports/`
 
 ```bash
 pnpm install
 pnpm test        # unit tests (Vitest + @vue/test-utils)
-pnpm typecheck   # tsc for the library, vue-tsc for the examples
-pnpm build       # build the library
+pnpm typecheck   # tsc for the library, vue-tsc for the module and examples
+pnpm build       # build the library and the Nuxt module
 pnpm dev         # run the examples app
+pnpm dev:nuxt    # run the Nuxt playground (put an Editor zip in packages/nuxt/playground/playcanvas/)
 ```
 
 ## License
