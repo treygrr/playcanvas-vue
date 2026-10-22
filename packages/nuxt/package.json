@@ -1,6 +1,6 @@
 {
     "name": "@treygrr/playcanvas-nuxt",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "description": "Play PlayCanvas Editor projects in Nuxt. A built-in admin imports your published builds onto your own server and releases them; use <PlayCanvasScene> on any page.",
     "keywords": [
         "nuxt",
