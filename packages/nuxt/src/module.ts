@@ -140,7 +140,10 @@ export default defineNuxtModule<ModuleOptions>({
         if (zips.length === 0) logger.info(`No PlayCanvas exports found in ${options.dir}/`);
 
         // Serve projects from repo zips as static files. Versions are content hashes, so their files
-        // never change. Project files fall through to the CMS route when there's no static one
+        // never change. Project files fall through to the CMS route when there's no static one.
+        // The folders are created even with no zips, as Nitro warns about missing ones
+        await mkdir(join(outDir, 'assets'), { recursive: true });
+        await mkdir(join(outDir, 'projects'), { recursive: true });
         nuxt.options.nitro.publicAssets ||= [];
         nuxt.options.nitro.publicAssets.push(
             { dir: join(outDir, 'assets'), baseURL: `${baseURL}/assets`, maxAge: 60 * 60 * 24 * 365 },
