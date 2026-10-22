@@ -33,17 +33,18 @@
         "dist"
     ],
     "scripts": {
-        "build": "nuxt-module-build build",
+        "build": "nuxt-module-build prepare && nuxt-module-build build",
         "dev": "nuxt dev playground",
         "dev:build": "nuxt build playground",
         "dev:prepare": "nuxt-module-build build --stub && nuxt-module-build prepare && nuxt prepare playground",
         "test": "nuxt-module-build prepare && vitest run",
-        "typecheck": "nuxt-module-build prepare && nuxt prepare playground && node typecheck/write-config.mjs && vue-tsc --noEmit -p .nuxt/tsconfig.typecheck.json && vue-tsc --noEmit -p src/runtime/server/tsconfig.json"
+        "typecheck": "nuxt-module-build prepare && nuxt prepare playground && node typecheck/write-config.mjs && vue-tsc --noEmit -p .nuxt/tsconfig.typecheck.json && vue-tsc --noEmit -p src/runtime/server/tsconfig.json",
+        "prepack": "pnpm build"
     },
     "dependencies": {
-        "@nuxt/kit": "4.6.0",
-        "@treygrr/playcanvas-vue": "workspace:*",
-        "fflate": "0.8.2"
+        "@nuxt/kit": "^4.6.0",
+        "@treygrr/playcanvas-vue": "workspace:^",
+        "fflate": "^0.8.2"
     },
     "devDependencies": {
         "@nuxt/module-builder": "1.0.3",

@@ -17,7 +17,8 @@
         "fmt": "prettier --check packages prettier.config.mjs",
         "fmt:fix": "prettier --write packages prettier.config.mjs",
         "test": "pnpm build:lib && pnpm -r run test",
-        "typecheck": "pnpm build:lib && pnpm -r run typecheck"
+        "typecheck": "pnpm build:lib && pnpm -r run typecheck",
+        "release": "node scripts/release.mjs"
     },
     "devDependencies": {
         "@playcanvas/eslint-config": "3.0.0-beta.8",

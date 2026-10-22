@@ -87,7 +87,8 @@ const checkEngineVersion = (project: PlayCanvasProject, rootDir: string) => {
 export default defineNuxtModule<ModuleOptions>({
     meta: {
         name: '@treygrr/playcanvas-nuxt',
-        configKey: 'playcanvas'
+        configKey: 'playcanvas',
+        compatibility: { nuxt: '^4.0.0' }
     },
     defaults: {
         dir: 'playcanvas',

@@ -1,0 +1,41 @@
+name: Release
+
+on:
+    push:
+        tags: ['v*']
+
+jobs:
+    publish:
+        runs-on: ubuntu-latest
+        permissions:
+            contents: write # create the GitHub release
+            id-token: write # npm trusted publishing and provenance
+        steps:
+            - uses: actions/checkout@v4
+            - uses: pnpm/action-setup@v4
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: 24
+                  cache: pnpm
+                  registry-url: https://registry.npmjs.org
+
+            - name: Check the tag matches the package versions
+              run: |
+                  for pkg in packages/lib packages/nuxt; do
+                      version=$(node -p "require('./$pkg/package.json').version")
+                      if [ "v$version" != "$GITHUB_REF_NAME" ]; then
+                          echo "$pkg is $version but the tag is $GITHUB_REF_NAME"
+                          exit 1
+                      fi
+                  done
+
+            - run: pnpm install --frozen-lockfile
+            - run: pnpm typecheck
+            - run: pnpm test
+
+            # Publishes playcanvas-vue before playcanvas-nuxt, and swaps workspace:^ for the real version.
+            - run: pnpm publish -r --access public --provenance --no-git-checks
+
+            - run: gh release create "$GITHUB_REF_NAME" --generate-notes
+              env:
+                  GH_TOKEN: ${{ github.token }}
