@@ -1,21 +1,22 @@
 {
     "name": "@treygrr/playcanvas-vue",
     "version": "0.1.0",
-    "description": "A Vue renderer for PlayCanvas – build interactive 3D applications using Vue's declarative paradigm.",
+    "description": "Interactive 3D in Vue with PlayCanvas: declarative components, composables, pointer events, physics, glTF modification, and PlayCanvas Editor projects.",
     "keywords": [
-        "2d",
-        "3d",
+        "playcanvas",
         "vue",
-        "gaussian",
-        "game",
-        "gltf",
-        "splatting",
+        "3d",
+        "2d",
         "webgl",
         "webgl2",
         "webgpu",
-        "webxr"
+        "webxr",
+        "gltf",
+        "gaussian",
+        "splatting",
+        "game"
     ],
-    "homepage": "https://github.com/treygrr/playcanvas-vue#readme",
+    "homepage": "https://github.com/treygrr/playcanvas-vue/tree/main/packages/lib#readme",
     "bugs": {
         "url": "https://github.com/treygrr/playcanvas-vue/issues"
     },

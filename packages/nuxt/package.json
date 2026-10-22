@@ -1,17 +1,19 @@
 {
     "name": "@treygrr/playcanvas-nuxt",
     "version": "0.1.0",
-    "description": "Play PlayCanvas Editor exports in Nuxt: drop a zip in playcanvas/, use <PlayCanvasScene> anywhere.",
+    "description": "Play PlayCanvas Editor projects in Nuxt. A built-in admin imports your published builds onto your own server and releases them; use <PlayCanvasScene> on any page.",
     "keywords": [
         "nuxt",
         "nuxt-module",
         "playcanvas",
+        "playcanvas-editor",
+        "cms",
         "vue",
         "3d",
         "webgl",
         "webgpu"
     ],
-    "homepage": "https://github.com/treygrr/playcanvas-vue#readme",
+    "homepage": "https://github.com/treygrr/playcanvas-vue/tree/main/packages/nuxt#readme",
     "bugs": {
         "url": "https://github.com/treygrr/playcanvas-vue/issues"
     },
