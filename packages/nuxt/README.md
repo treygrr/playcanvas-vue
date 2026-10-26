@@ -24,19 +24,34 @@ export default defineNuxtConfig({
 
 ## The admin
 
-Set an admin password and your PlayCanvas API token, then open `/_playcanvas`:
+The admin is built with [Nuxt UI](https://ui.nuxt.com), so it needs Nuxt UI in your app. Apps that only play scenes don't: without it, the admin is off and the module says so.
 
-```bash
-# .env, next to nuxt.config.ts
-NUXT_PLAYCANVAS_TOKEN=…            # from your PlayCanvas account page → API Tokens
-NUXT_PLAYCANVAS_ADMIN_PASSWORD=…   # to log in to the admin
-```
+1. **Set up Nuxt UI**, as [its installation guide](https://ui.nuxt.com/docs/getting-started/installation/nuxt) says: the module, `@import "@nuxt/ui"` in your CSS, and `<UApp>` around your app in `app.vue`. Also install the icons the admin uses: `npm install @iconify-json/lucide`.
+2. **Point Tailwind at the admin.** Tailwind doesn't scan `node_modules`, so add the module's files to your main CSS file (the path is relative to it):
 
-1. **Add a project** by its id, or paste its Editor link (`playcanvas.com/editor/project/1234567`). Its slug comes from the app name, and you can choose your own.
+    ```css
+    /* app/assets/css/main.css */
+    @import 'tailwindcss';
+    @import '@nuxt/ui';
+
+    @source "../../../node_modules/@treygrr/playcanvas-nuxt/dist/runtime";
+    ```
+
+3. **Set an admin password and your PlayCanvas API token**, then open `/_playcanvas`:
+
+    ```bash
+    # .env, next to nuxt.config.ts
+    NUXT_PLAYCANVAS_TOKEN=…            # from your PlayCanvas account page → API Tokens
+    NUXT_PLAYCANVAS_ADMIN_PASSWORD=…   # to log in to the admin
+    ```
+
+It has a sidebar with each of your projects, and search (<kbd>⌘</kbd> <kbd>K</kbd>) to jump to one. To release a project:
+
+1. **Add a project** by its id, or paste its Editor link (`playcanvas.com/editor/project/1234567`). Its address comes from the app name, and you can choose your own.
 2. **Publish in the Editor.** Each published app becomes a version, with the version label and release notes you set when publishing. The newest and the Editor's primary app are downloaded to your server; older ones can be imported from their row.
-3. **Make a version live.** Until then the project returns 404. Every downloaded version has a preview link (`/play/<slug>?preview=…`) that works even before it's live.
+3. **Make a version live.** Until then the project returns 404. Every downloaded version has a preview link (`/play/<slug>?preview=…`), in its menu, that works even before it's live.
 
-Per project you can also:
+A project's page shows, top to bottom: what visitors get now, anything that needs doing (offline, a scheduled release), its versions, its release settings, and deleting it. Per project you can also:
 
 - **Auto-release** (off by default): make the Editor's primary app live as soon as it's imported, so publishing in the Editor is the release. Changing the primary app back is a rollback.
 - **Pin**: keep the current version when auto-release is on. Choosing a version by hand pins it.
@@ -168,7 +183,7 @@ export default defineNuxtConfig({
         route: '/play',
         // URL the project files and API are served from
         baseURL: '/_playcanvas',
-        // Route of the admin, or false to disable it
+        // Route of the admin, or false to disable it. Needs @nuxt/ui in your modules
         admin: '/_playcanvas',
         // Background syncing of PlayCanvas projects
         sync: { onRequest: true, interval: 300 },

@@ -40,7 +40,8 @@ const projectSummary = (project: ProjectRecord) => {
         title: project.title,
         playcanvas: project.playcanvas,
         liveVersion: project.liveVersion,
-        liveLabel: live?.label ?? null,
+        // Named as the project's page names it: its label, else the build's title
+        liveLabel: live?.label ?? live?.title ?? null,
         autoRelease: project.autoRelease,
         pinned: project.pinned ?? false,
         unpublished: project.unpublished,

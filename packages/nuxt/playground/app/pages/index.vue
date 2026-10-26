@@ -29,13 +29,7 @@ import { Light, Render } from '@treygrr/playcanvas-vue/components';
     </main>
 </template>
 
-<style>
-body {
-    margin: 0;
-    font-family: system-ui, sans-serif;
-    background: #f4f4f5;
-}
-
+<style scoped>
 main {
     max-width: 960px;
     margin: 0 auto;

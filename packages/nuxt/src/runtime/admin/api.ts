@@ -1,4 +1,4 @@
-import { useRuntimeConfig } from '#imports';
+import { useRuntimeConfig, useState } from '#imports';
 
 export type AuthState = {
     authenticated: boolean;
@@ -122,25 +122,66 @@ export function useAdminApi() {
     };
 }
 
-const dateFormat = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' });
-const relativeFormat = new Intl.RelativeTimeFormat(undefined, { numeric: 'auto' });
+export type RepoProject = { slug: string; title: string; version: string };
 
-export const formatDate = (date: string | null | undefined) => (date ? dateFormat.format(new Date(date)) : '—');
-
-/** eg "5 minutes ago" */
-export function formatRelative(date: string | null | undefined): string {
-    if (!date) return 'never';
-    const seconds = (Date.parse(date) - Date.now()) / 1000;
-    const units: [Intl.RelativeTimeFormatUnit, number][] = [
-        ['day', 86_400],
-        ['hour', 3_600],
-        ['minute', 60]
-    ];
-    for (const [unit, size] of units) {
-        if (Math.abs(seconds) >= size) return relativeFormat.format(Math.round(seconds / size), unit);
-    }
-    return 'just now';
+/**
+ * The project list, shared by the sidebar and the projects page, so a change on one page shows in the other.
+ * Loaded once logged in: `null` until then.
+ */
+export function useAdminProjects() {
+    const api = useAdminApi();
+    const projects = useState<AdminProjectSummary[] | null>('playcanvas-admin-projects', () => null);
+    const repo = useState<RepoProject[]>('playcanvas-admin-repo', () => []);
+    const refresh = async () => {
+        const data = await api.projects();
+        projects.value = data.projects;
+        repo.value = data.repo;
+    };
+    return { projects, repo, refresh };
 }
+
+type Color = 'primary' | 'success' | 'warning' | 'error' | 'neutral' | 'info';
+export type Status = { label: string; color: Color; icon: string };
+
+/** Whether visitors can play a project, and why not */
+export function projectStatus(
+    project: Pick<AdminProject, 'unpublished' | 'expiresAt' | 'liveVersion'>,
+    now = Date.now()
+): Status {
+    if (project.unpublished) return { label: 'Offline', color: 'neutral', icon: 'i-lucide-eye-off' };
+    if (project.expiresAt && Date.parse(project.expiresAt) <= now) {
+        return { label: 'Expired', color: 'error', icon: 'i-lucide-clock-alert' };
+    }
+    if (!project.liveVersion) return { label: 'Not live', color: 'warning', icon: 'i-lucide-circle-dashed' };
+    return { label: 'Live', color: 'success', icon: 'i-lucide-radio' };
+}
+
+/** How a project's live version is chosen */
+export function releaseMode(project: Pick<AdminProject, 'autoRelease' | 'pinned'>): Status {
+    if (project.autoRelease && project.pinned) return { label: 'Pinned', color: 'neutral', icon: 'i-lucide-pin' };
+    if (project.autoRelease) return { label: 'Automatic', color: 'neutral', icon: 'i-lucide-zap' };
+    return { label: 'Manual', color: 'neutral', icon: 'i-lucide-hand' };
+}
+
+export const versionName = (version: AdminVersion) => version.label ?? version.title ?? version.id;
+
+/** Where a version came from, with an icon */
+export function versionOrigin(version: AdminVersion): { label: string; icon: string } {
+    if (version.origin.type === 'app') {
+        return { label: `Published app ${version.origin.appId}`, icon: 'i-lucide-upload-cloud' };
+    }
+    if (version.origin.type === 'branch') {
+        return { label: `Branch build, job ${version.origin.jobId}`, icon: 'i-lucide-git-branch' };
+    }
+    return { label: version.origin.name, icon: 'i-lucide-file-archive' };
+}
+
+/** A `datetime-local` input's value for a date: local time, without a zone */
+export const toLocalInput = (date: string | null | undefined) => {
+    if (!date) return '';
+    const value = new Date(date);
+    return new Date(value.getTime() - value.getTimezoneOffset() * 60_000).toISOString().slice(0, 16);
+};
 
 export function formatSize(bytes: number | undefined): string {
     if (!bytes) return '—';

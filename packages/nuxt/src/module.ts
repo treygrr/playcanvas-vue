@@ -10,6 +10,7 @@ import {
     createResolver,
     defineNuxtModule,
     extendPages,
+    hasNuxtModule,
     useLogger
 } from '@nuxt/kit';
 
@@ -44,6 +45,7 @@ export type ModuleOptions = {
     /**
      * The route of the admin, where PlayCanvas projects are added and released. `false` disables it.
      * Log in with NUXT_PLAYCANVAS_ADMIN_PASSWORD, or decide access with a `playcanvas:authorize` hook.
+     * Its pages are built with Nuxt UI, so the app needs `@nuxt/ui` among its modules.
      * @default '/_playcanvas'
      */
     admin: string | false;
@@ -191,7 +193,14 @@ export default defineNuxtModule<ModuleOptions>({
         const normalizeRoute = (route: string) => `/${route.replace(/^\/|\/$/g, '')}`;
         // Empty when disabled: runtime config values can't be null
         const playRoute = options.route === false ? '' : normalizeRoute(options.route);
-        const adminRoute = options.admin === false ? '' : normalizeRoute(options.admin);
+        // The admin's pages are built with Nuxt UI, which apps that only play scenes don't need
+        const hasNuxtUi = hasNuxtModule('@nuxt/ui', nuxt);
+        if (options.admin !== false && !hasNuxtUi) {
+            logger.warn(
+                'The PlayCanvas admin needs Nuxt UI: add @nuxt/ui to your modules (https://ui.nuxt.com), or set `playcanvas.admin: false`. The admin is off.'
+            );
+        }
+        const adminRoute = options.admin === false || !hasNuxtUi ? '' : normalizeRoute(options.admin);
 
         nuxt.options.runtimeConfig.public.playcanvas = { baseURL, playRoute, adminRoute };
 

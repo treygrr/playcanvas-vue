@@ -1,0 +1,6 @@
+@import 'tailwindcss';
+@import '@nuxt/ui';
+
+/* The PlayCanvas admin, which Tailwind doesn't find outside the app. An installed module is at
+   node_modules/@treygrr/playcanvas-nuxt/dist/runtime instead. */
+@source "../../../../src/runtime";
